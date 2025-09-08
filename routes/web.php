@@ -4,7 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\PatientController;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Auth\PhoneVerificationController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -42,5 +42,8 @@ Route::prefix('doctors')->name('doctors.')->middleware('auth')->group(function (
     Route::put('/{doctor}', [DoctorController::class, 'update'])->name('update');
     Route::delete('/{doctor}', [DoctorController::class, 'destroy'])->name('destroy');
 });
+
+Route::get('/verify-phone', [PhoneVerificationController::class, 'show'])->name('verify.phone');
+Route::post('/verify-phone', [PhoneVerificationController::class, 'verify'])->name('verify.phone.post');
 
 require __DIR__.'/auth.php';
