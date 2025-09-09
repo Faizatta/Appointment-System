@@ -33,7 +33,7 @@ class RegisteredUserController extends Controller
         $request->validate(
             [
                 'name' => ['required', 'string', 'max:255'],
-                'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+                'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
                 'password' => ['required', 'confirmed', Rules\Password::defaults()],
                 'phone' => ['required', 'string', 'regex:/^(?:\+92|0)3\d{9}$/'],
             ],
@@ -41,13 +41,20 @@ class RegisteredUserController extends Controller
                 'phone.regex' => 'Phone number must be a valid Pakistani number, e.g., 03001234567 or +923001234567.',
             ]
         );
+        $phone = preg_replace('/[^0-9]/', '', $request->phone);
+
+        if (substr($phone, 0, 2) === "03") {
+            $phone = "+92" . substr($phone, 1);
+        } elseif (substr($phone, 0, 2) === "92") {
+            $phone = "+$phone";
+        }
 
         // Create user
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'phone' => $request->phone,
+            'phone' => $phone,
         ]);
 
 

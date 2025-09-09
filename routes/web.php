@@ -43,7 +43,10 @@ Route::prefix('doctors')->name('doctors.')->middleware('auth')->group(function (
     Route::delete('/{doctor}', [DoctorController::class, 'destroy'])->name('destroy');
 });
 
-Route::get('/verify-phone', [PhoneVerificationController::class, 'show'])->name('verify.phone');
-Route::post('/verify-phone', [PhoneVerificationController::class, 'verify'])->name('verify.phone.post');
 
+Route::post('/verify-phone', [PhoneVerificationController::class, 'verify'])
+    ->name('verify.phone.verify');
+
+Route::get('/resend-otp', [PhoneVerificationController::class, 'resend'])
+    ->name('resend.otp');
 require __DIR__.'/auth.php';

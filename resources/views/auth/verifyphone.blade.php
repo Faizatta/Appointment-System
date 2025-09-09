@@ -27,33 +27,31 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('verify.phone.post') }}">
-        @csrf
+  <form method="POST" action="{{ route('verify.phone.verify') }}">
+    @csrf
+    <div class="mb-3">
+        <label for="phone" class="form-label">Phone Number</label>
+        <input id="phone" type="tel" name="phone" value="{{ $phone }}" class="form-control rounded-3" readonly>
+    </div>
 
+    <div class="mb-3">
+        <label for="otp" class="form-label">Enter OTP</label>
+        <input id="otp" type="text" name="otp" class="form-control rounded-3" placeholder="6-digit OTP" required>
+    </div>
 
-        <div class="mb-3">
-            <label for="phone" class="form-label">Phone Number</label>
-            <input id="phone" type="tel" name="phone" value="{{ old('phone', $phone) }}" class="form-control rounded-3" readonly>
-        </div>
+    <div class="d-grid mt-3">
+        <button type="submit" class="btn btn-success rounded-pill py-2 fw-semibold">
+            Verify OTP
+        </button>
+    </div>
 
-        <!-- OTP -->
-        <div class="mb-3">
-            <label for="otp" class="form-label">Enter OTP</label>
-            <input id="otp" type="text" name="otp" class="form-control rounded-3" placeholder="6-digit OTP" required>
-        </div>
+    <div class="text-center mt-3">
+        <a href="{{ route('resend.otp') }}" class="small text-decoration-none text-secondary">
+            Resend OTP
+        </a>
+    </div>
+</form>
 
-        <div class="d-grid mt-3">
-            <button type="submit" class="btn btn-success rounded-pill py-2 fw-semibold">
-                Verify OTP
-            </button>
-        </div>
-
-        <div class="text-center mt-3">
-            <a href="{{ route('resend.otp') }}" class="small text-decoration-none text-secondary">
-                Resend OTP
-            </a>
-        </div>
-    </form>
 </div>
 
 </body>

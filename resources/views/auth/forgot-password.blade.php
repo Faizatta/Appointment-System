@@ -16,7 +16,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('verify.phone') }}">
+        <form method="POST" action="{{ route('verify.phone.post') }}">
             @csrf
 
             <div class="mb-3">

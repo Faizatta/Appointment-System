@@ -12,43 +12,47 @@ use Twilio\Rest\Client;
 
 class PhoneVerificationController extends Controller
 {
-    // Step 1: Show forgot-password form
+    // Step 1: Show Forgot Password form
     public function showForm()
     {
         return view('auth.forgot-password');
     }
 
-    // Step 2: Handle submission (email or phone)
+    // Step 2: Send reset link or OTP
     public function send(Request $request)
     {
         $request->validate(['identifier' => 'required']);
 
         $identifier = $request->identifier;
 
-        // Email flow
+        // Email case
         if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
             $user = User::where('email', $identifier)->first();
-            if (!$user) return back()->withErrors(['identifier' => 'User not found.']);
+            if (!$user) {
+                return back()->withErrors(['identifier' => 'User not found.']);
+            }
 
             Password::sendResetLink(['email' => $user->email]);
             return back()->with('status', 'Password reset link sent to your email!');
         }
 
-        // Phone flow
+        // Phone case
         $user = User::where('phone', $identifier)->first();
-        if (!$user) return back()->withErrors(['identifier' => 'User not found.']);
+        if (!$user) {
+            return back()->withErrors(['identifier' => 'User not found.']);
+        }
 
-        // Generate OTP
+
         $otp = rand(100000, 999999);
         $user->otp_code = $otp;
         $user->otp_expires_at = Carbon::now()->addMinutes(5);
         $user->save();
 
-        // Send SMS via Twilio
+
         $twilio = new Client(env('TWILIO_SID'), env('TWILIO_AUTH_TOKEN'));
         $twilio->messages->create($user->phone, [
             'from' => env('TWILIO_FROM'),
-            'body' => "Your OTP for password reset is: $otp. It expires in 5 minutes."
+            'body' => "Your OTP for password reset is: $otp. It expires in 5 minutes. aap ka bht bht shukaryaaa 💀 aga share na krnaa...okkk samj gai????"
         ]);
 
         $request->session()->put('phone', $user->phone);
@@ -60,9 +64,11 @@ class PhoneVerificationController extends Controller
     public function showOTPForm(Request $request)
     {
         $phone = $request->session()->get('phone');
-        if (!$phone) return redirect()->route('password.request');
+        if (!$phone) {
+            return redirect()->route('password.request');
+        }
 
-        return view('auth.verify-phone', compact('phone'));
+        return view('auth.verifyphone', compact('phone'));
     }
 
     // Step 4: Verify OTP
@@ -75,29 +81,36 @@ class PhoneVerificationController extends Controller
         $phone = $request->session()->get('phone');
         $user = User::where('phone', $phone)->first();
 
-        if (!$user) return back()->withErrors(['phone' => 'User not found.']);
-        if ($user->otp_code != $request->otp) return back()->withErrors(['otp' => 'Invalid OTP.']);
-        if (Carbon::now()->greaterThan($user->otp_expires_at)) return back()->withErrors(['otp' => 'OTP expired.']);
-
+        if (!$user) {
+            return back()->withErrors(['phone' => 'User not found.']);
+        }
+        if ($user->otp_code != $request->otp) {
+            return back()->withErrors(['otp' => 'Invalid OTP.']);
+        }
+        if (Carbon::now()->greaterThan($user->otp_expires_at)) {
+            return back()->withErrors(['otp' => 'OTP expired.']);
+        }
+    $request->session()->put('phone', $user->phone);
         // OTP correct → allow password reset
         $user->otp_code = null;
         $user->otp_expires_at = null;
-        $user->phone_verified = true;
         $user->save();
 
-        return redirect()->route('reset.password.phone')->with('phone', $phone);
+        return redirect()->route('reset.password.phone');
     }
 
-    // Step 5: Show password reset form
+    // Step 5: Show reset form
     public function showResetForm(Request $request)
     {
         $phone = $request->session()->get('phone');
-        if (!$phone) return redirect()->route('password.request');
+        if (!$phone) {
+            return redirect()->route('password.request');
+        }
 
-        return view('auth.reset-password-phone', compact('phone'));
+        return view('auth.reset-password', compact('phone'));
     }
 
-    // Step 6: Reset password for phone users
+    // Step 6: Reset password
     public function resetPassword(Request $request)
     {
         $request->validate([
@@ -106,7 +119,9 @@ class PhoneVerificationController extends Controller
         ]);
 
         $user = User::where('phone', $request->phone)->first();
-        if (!$user) return back()->withErrors(['phone' => 'User not found.']);
+        if (!$user) {
+            return back()->withErrors(['phone' => 'User not found.']);
+        }
 
         $user->password = Hash::make($request->password);
         $user->save();
@@ -114,5 +129,32 @@ class PhoneVerificationController extends Controller
         $request->session()->forget('phone');
 
         return redirect()->route('login')->with('success', 'Password reset successfully!');
+    }
+
+    // Resend OTP
+    public function resend(Request $request)
+    {
+        $phone = $request->session()->get('phone');
+        if (!$phone) {
+            return back()->withErrors(['phone' => 'No phone found in session.']);
+        }
+
+        $user = User::where('phone', $phone)->first();
+        if (!$user) {
+            return back()->withErrors(['phone' => 'User not found.']);
+        }
+
+        $otp = rand(100000, 999999);
+        $user->otp_code = $otp;
+        $user->otp_expires_at = Carbon::now()->addMinutes(5);
+        $user->save();
+
+        $twilio = new Client(env('TWILIO_SID'), env('TWILIO_AUTH_TOKEN'));
+        $twilio->messages->create($user->phone, [
+            'from' => env('TWILIO_FROM'),
+            'body' => "Your new OTP is: $otp. It expires in 5 minutes."
+        ]);
+
+        return back()->with('success', 'A new OTP has been sent.');
     }
 }
