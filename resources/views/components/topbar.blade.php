@@ -22,14 +22,13 @@
                 </div>
             </button>
 
-            <ul class="dropdown-menu text-center"
-                style="min-width: 100px; padding: 0.25rem 0; left: 50%; transform: translateX(-30%);"
-                aria-labelledby="adminDropdown">
+             <ul class="dropdown-menu dropdown-menu-end text-center"
+                aria-labelledby="adminDropdown"
+                style="min-width: 50px; padding: 0.2rem 0; font-size: 0.85rem;">
+
                 <li><a class="dropdown-item py-1" href="#">Profile</a></li>
                 <li><a class="dropdown-item py-1" href="#">Settings</a></li>
-                <li>
-                    <hr class="dropdown-divider my-1">
-                </li>
+                <li><hr class="dropdown-divider my-1"></li>
                 <li>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
@@ -37,6 +36,7 @@
                     </form>
                 </li>
             </ul>
+
 
         </div>
     </div>

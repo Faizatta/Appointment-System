@@ -12,13 +12,13 @@ use Twilio\Rest\Client;
 
 class PhoneVerificationController extends Controller
 {
-    // Step 1: Show Forgot Password form
+
     public function showForm()
     {
         return view('auth.forgot-password');
     }
 
-    // Step 2: Send reset link or OTP
+
     public function send(Request $request)
     {
         $request->validate(['identifier' => 'required']);
@@ -60,7 +60,6 @@ class PhoneVerificationController extends Controller
         return redirect()->route('verify.phone');
     }
 
-    // Step 3: Show OTP form
     public function showOTPForm(Request $request)
     {
         $phone = $request->session()->get('phone');
@@ -71,7 +70,6 @@ class PhoneVerificationController extends Controller
         return view('auth.verifyphone', compact('phone'));
     }
 
-    // Step 4: Verify OTP
     public function verify(Request $request)
     {
         $request->validate([
@@ -91,7 +89,7 @@ class PhoneVerificationController extends Controller
             return back()->withErrors(['otp' => 'OTP expired.']);
         }
     $request->session()->put('phone', $user->phone);
-        // OTP correct → allow password reset
+
         $user->otp_code = null;
         $user->otp_expires_at = null;
         $user->save();
@@ -99,7 +97,7 @@ class PhoneVerificationController extends Controller
         return redirect()->route('reset.password.phone');
     }
 
-    // Step 5: Show reset form
+
     public function showResetForm(Request $request)
     {
         $phone = $request->session()->get('phone');
@@ -110,7 +108,6 @@ class PhoneVerificationController extends Controller
         return view('auth.reset-password', compact('phone'));
     }
 
-    // Step 6: Reset password
     public function resetPassword(Request $request)
     {
         $request->validate([
@@ -131,7 +128,7 @@ class PhoneVerificationController extends Controller
         return redirect()->route('login')->with('success', 'Password reset successfully!');
     }
 
-    // Resend OTP
+   
     public function resend(Request $request)
     {
         $phone = $request->session()->get('phone');
