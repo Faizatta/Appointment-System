@@ -9,7 +9,7 @@ use App\Models\User;
 
 class RoleController extends Controller
 {
-  
+
     public function roleindex()
     {
         $roles = Role::with(['permissions', 'users'])->get();
@@ -52,8 +52,6 @@ class RoleController extends Controller
         return view('roles.showrole', compact('role'));
     }
 
-
-
     public function editrole(Role $role)
     {
         $permissions = Permission::all();
@@ -76,7 +74,7 @@ class RoleController extends Controller
             $permissions = Permission::whereIn('id', $request->permissions)->get();
             $role->syncPermissions($permissions);
         } else {
-            $role->syncPermissions([]); // remove all if unchecked
+            $role->syncPermissions([]);
         }
 
         return redirect()->route('roles.roleindex')

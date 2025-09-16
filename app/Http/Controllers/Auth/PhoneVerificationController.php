@@ -128,7 +128,7 @@ class PhoneVerificationController extends Controller
         return redirect()->route('login')->with('success', 'Password reset successfully!');
     }
 
-   
+
     public function resend(Request $request)
     {
         $phone = $request->session()->get('phone');

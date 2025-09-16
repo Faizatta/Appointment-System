@@ -13,7 +13,6 @@
                 @method('PUT')
                 <div class="modal-body p-2">
 
-                    <!-- Role Name -->
                     <div class="mb-2">
                         <label class="form-label small">Role Name</label>
                         <input type="text"
@@ -24,7 +23,6 @@
                                {{ strtolower($role->name) == 'admin' ? 'readonly' : '' }}>
                     </div>
 
-                    <!-- Permissions as Checkboxes -->
                     <div class="mb-2">
                         <label class="form-label small">Permissions</label>
                         <div class="row g-1">

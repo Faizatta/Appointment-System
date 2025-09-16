@@ -5,8 +5,7 @@
         @csrf
         <div class="modal-header">
           <h5 class="modal-title fw-bold" id="createRoleModalLabel">Create Role</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
+                 </div>
 
         <div class="modal-body">
           <div class="mb-3">
@@ -14,19 +13,20 @@
             <input type="text" name="name" id="role_name" class="form-control" required>
           </div>
 
-          <div class="mb-3">
-            <label class="form-label">Assign Permissions</label>
-            <div class="d-flex flex-wrap">
-              @foreach($permissions as $permission)
-                <div class="form-check me-3">
-                  <input class="form-check-input" type="checkbox" name="permissions[]" value="{{ $permission->name }}" id="perm_{{ $permission->id }}">
-                  <label class="form-check-label" for="perm_{{ $permission->id }}">
+      <div class="mb-3">
+    <label class="form-label">Assign Permissions</label>
+    <div class="d-flex flex-wrap gap-2">
+        @foreach($permissions as $permission)
+            <div class="form-check" style="min-width: 150px;">
+                <input class="form-check-input" type="checkbox" name="permissions[]" value="{{ $permission->name }}" id="perm_{{ $permission->id }}">
+                <label class="form-check-label" for="perm_{{ $permission->id }}">
                     {{ $permission->name }}
-                  </label>
-                </div>
-              @endforeach
+                </label>
             </div>
-          </div>
+        @endforeach
+    </div>
+</div>
+
         </div>
 
         <div class="modal-footer">

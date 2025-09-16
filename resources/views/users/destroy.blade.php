@@ -1,12 +1,13 @@
-{{-- resources/views/users/destroy.blade.php --}}
-<div class="modal fade" id="deleteUserModal{{ $user->id }}" tabindex="-1" aria-labelledby="deleteUserModalLabel{{ $user->id }}" aria-hidden="true">
+<div class="modal fade" id="deleteUserModal{{ $user->id }}" tabindex="-1"
+    aria-labelledby="deleteUserModalLabel{{ $user->id }}" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title" id="deleteUserModalLabel{{ $user->id }}">
                     <i class="fas fa-exclamation-triangle"></i> Delete User
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
             </div>
 
             <div class="modal-body">

@@ -15,21 +15,21 @@
 
                 <div class="modal-body">
 
-                    {{-- Name --}}
+
                     <div class="mb-2">
                         <label class="form-label">Name</label>
                         <input type="text" name="name" value="{{ $user->name }}"
                             class="form-control form-control-sm" required>
                     </div>
 
-                    {{-- Email --}}
+
                     <div class="mb-2">
                         <label class="form-label">Email</label>
                         <input type="email" name="email" value="{{ $user->email }}"
                             class="form-control form-control-sm" required>
                     </div>
 
-              
+
                     <div class="mb-2">
                         <label class="form-label">Assign Roles</label>
                         @foreach ($roles->where('name', '!=', 'admin') as $role)

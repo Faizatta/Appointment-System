@@ -35,22 +35,15 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
 
+
+
+
     Route::prefix('roles')->name('roles.')->group(function () {
         Route::get('/', [RoleController::class, 'roleindex'])->name('roleindex');
         Route::post('/', [RoleController::class, 'storerole'])->name('storerole');
         Route::put('/{role}', [RoleController::class, 'updaterole'])->name('updaterole');
         Route::delete('/{role}', [RoleController::class, 'destroyrole'])->name('destroyrole');
     });
-
-    // Route::middleware('role:admin')->prefix('users')->name('users.')->group(function () {
-    //     Route::get('/', [UserController::class, 'index'])->name('index');
-    //     Route::post('/', [UserController::class, 'store'])->name('store');
-    //     Route::get('/create', [UserController::class, 'create'])->name('create');
-    //     Route::get('/{user}/edit', [UserController::class, 'edit'])->name('edit');
-    //     Route::put('/{user}', [UserController::class, 'update'])->name('update');
-    //     Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
-    //     Route::post('/{user}/assign-role', [UserController::class, 'assignRole'])->name('assignRole');
-    // });
 
     Route::prefix('doctors')->name('doctors.')->group(function () {
         Route::get('/', [DoctorController::class, 'index'])->name('index');
@@ -77,11 +70,17 @@ Route::middleware('auth')->group(function () {
 Route::post('/verify-phone', [PhoneVerificationController::class, 'verify'])->name('verify.phone.verify');
 Route::get('/resend-otp', [PhoneVerificationController::class, 'resend'])->name('resend.otp');
 
-Route::get('/users', [UserController::class, 'index'])->name('users.index');
-Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
-Route::post('/users/store', [UserController::class, 'store'])->name('users.store');
-Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
-Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
-Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy'); 
+Route::controller(UserController::class)
+    ->prefix('users')
+    ->name('users.')
+    ->group(function () {
+        Route::get('/', 'index')->name('index');   
+        Route::get('/create', 'create')->name('create');
+        Route::post('/store', 'store')->name('store');
+        Route::get('/{user}/edit', 'edit')->name('edit');
+        Route::put('/{user}', 'update')->name('update');
+        Route::delete('/{user}', 'destroy')->name('destroy');
+    });
 
-require __DIR__.'/auth.php';
+
+require __DIR__ . '/auth.php';

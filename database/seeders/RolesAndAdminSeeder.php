@@ -13,7 +13,7 @@ class RolesAndAdminSeeder extends Seeder
     public function run()
     {
 
-        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        $adminRole = Role::firstOrCreate(['name' => 'Admin']);
 
 
         $permissions = [

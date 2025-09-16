@@ -5,70 +5,93 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
-use Illuminate\Support\Facades\Hash;
+use Yajra\DataTables\Facades\DataTables;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::with('roles')->get();
+        if ($request->ajax()) {
+            $users = User::with('roles')->select('users.*');
+
+            return DataTables::of($users)
+                ->addColumn('roles', function ($user) {
+                    return $user->roles->pluck('name')->implode(', ');
+                })
+                ->addColumn('actions', function ($user) {
+                    // Hide actions for admin
+                    if ($user->hasRole('admin')) {
+                        return '<span class="text-muted">-</span>';
+                    }
+                    $roles = implode(',', $user->roles->pluck('name')->toArray());
+
+                    return '
+                        <a href="#" class="btn btn-sm btn-outline-primary editUserBtn"
+                           data-id="' . $user->id . '"
+                           data-name="' . $user->name . '"
+                           data-email="' . $user->email . '"
+                           data-roles="' . $roles . '">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <form action="' . route('users.destroy', $user->id) . '" method="POST"
+                              class="d-inline delete-user-form">
+                            ' . csrf_field() . method_field("DELETE") . '
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    ';
+                })
+                ->rawColumns(['actions'])
+                ->make(true);
+        }
+
         $roles = Role::all();
-        return view('users.index', compact('users', 'roles'));
+        return view('roles.index', compact('roles'));
     }
 
-public function store(Request $request)
-{
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'email' => 'required|email|unique:users',
-        'password' => 'required|confirmed|min:6',
-        'roles' => 'required|array',
-    ]);
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'roles' => 'array',
+        ]);
 
-    $user = User::create([
-        'name' => $request->name,
-        'email' => $request->email,
-        'password' => Hash::make($request->password),
-    ]);
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => bcrypt('password'), // default password, change as needed
+        ]);
 
-    $user->syncRoles($request->roles);
-    return redirect()->route('roles.roleindex')->with('success', 'User created and role(s) assigned successfully.');
+        if ($request->roles) {
+            $user->syncRoles($request->roles);
+        }
 
-}
-
-public function assignRole(Request $request, User $user)
-{
-    $request->validate(['roles' => 'required|array']);
-    $user->syncRoles($request->roles);
-    return redirect()->route('roles.roleindex')->with('success', 'Role(s) assigned successfully.');
-}
-
-
-   public function update(Request $request, User $user)
-{
-    $request->validate([
-        'name' => 'required|string',
-        'email' => 'required|email|unique:users,email,' . $user->id,
-        'roles' => 'required|array', // validate roles array
-    ]);
-
-    $user->update([
-        'name' => $request->name,
-        'email' => $request->email,
-    ]);
-
-    if ($request->roles) {
-        $user->syncRoles($request->roles); // use roles array, not 'role'
+        return back()->with('success', 'User created successfully.');
     }
 
-    return redirect()->back()->with('success', 'User updated successfully.');
-}
+    public function update(Request $request, User $user)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'roles' => 'array',
+        ]);
+
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+        ]);
+
+        $user->syncRoles($request->roles ?? []);
+
+        return back()->with('success', 'User updated successfully.');
+    }
 
     public function destroy(User $user)
     {
         $user->delete();
-        return redirect()->route('roles.roleindex')->with('success', 'User deleted successfully.');
+        return back()->with('success', 'User deleted successfully.');
     }
-
-
 }

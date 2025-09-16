@@ -123,7 +123,6 @@
     </div>
 </div>
 
-{{-- Modals --}}
 @can('add patient')
     @include('components.addpatientmodal', ['doctors' => $doctors])
 @endcan
