@@ -5,24 +5,30 @@ namespace App\Http\Controllers;
 use App\Models\Doctor;
 use Illuminate\Http\Request;
 use Yajra\DataTables\Facades\DataTables;
+use Illuminate\Support\Facades\Storage;
 
 class DoctorController extends Controller
 {
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $data = Doctor::with('patients')->select('doctors.*'); // eager load patients
-            return DataTables::of($data)
+            $doctors = Doctor::with('patients')->get();
+
+            return DataTables::of($doctors)
                 ->addColumn('doctor', function ($row) {
                     return $row->name;
                 })
+                ->addColumn('image', function ($row) {
+                    // return full URL of image or default avatar
+                    return $row->image
+                        ? Storage::url($row->image)
+                        : asset('default-avatar.png');
+                })
                 ->addColumn('initials', function ($row) {
-                    $words = explode(' ', $row->name);
-                    $initials = '';
-                    foreach ($words as $w) {
-                        $initials .= strtoupper($w[0]);
-                    }
-                    return $initials;
+                    return strtoupper(substr($row->name, 0, 2));
+                })
+                ->addColumn('address', function ($row) {
+                    return $row->address;
                 })
                 ->addColumn('contact', function ($row) {
                     return [
@@ -34,37 +40,40 @@ class DoctorController extends Controller
                     return $row->patients->pluck('name')->toArray();
                 })
                 ->addColumn('actions', function ($row) {
-                    $viewBtn = '<a href="#" class="viewDoctor btn btn-sm btn-dark action-icon"
-                    data-id="' . $row->id . '"
-                    data-name="' . $row->name . '"
-                    data-email="' . $row->email . '"
-                    data-phone="' . $row->phone . '"
-                    data-address="' . $row->address . '"
-                    data-image="' . ($row->image ?? '') . '"
-                    data-patients="' . htmlspecialchars(json_encode($row->patients->pluck('name')->toArray())) . '">
-                    <i class="bi bi-eye"></i>
-                </a>';
+                    $imageUrl = $row->image
+                        ? Storage::url($row->image)
+                        : asset('default-avatar.png');
 
-                    $editBtn = '<a href="#" class="editDoctor btn btn-sm btn-dark action-icon"
-                    data-id="' . $row->id . '"
-                    data-name="' . $row->name . '"
-                    data-email="' . $row->email . '"
-                    data-phone="' . $row->phone . '"
-                    data-address="' . $row->address . '"
-                    data-image="' . ($row->image ?? '') . '">
-                    <i class="bi bi-pencil-square"></i>
-                </a>';
+                    $viewBtn = '<button class="btn btn-sm btn-dark viewDoctor"
+                                    data-id="' . $row->id . '"
+                                    data-name="' . e($row->name) . '"
+                                    data-email="' . e($row->email) . '"
+                                    data-phone="' . e($row->phone) . '"
+                                    data-address="' . e($row->address) . '"
+                                    data-patients=\'' . e($row->patients->pluck('name')->toJson()) . '\'
+                                    data-image="' . $imageUrl . '">
+                                    <i class="bi bi-eye"></i>
+                                </button>';
+
+                    $editBtn = '<button class="btn btn-sm btn-dark editDoctor"
+                                    data-id="' . $row->id . '"
+                                    data-name="' . e($row->name) . '"
+                                    data-email="' . e($row->email) . '"
+                                    data-phone="' . e($row->phone) . '"
+                                    data-address="' . e($row->address) . '"
+                                    data-image="' . $imageUrl . '">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>';
 
                     $deleteBtn = '<form method="POST" action="' . route('doctors.destroy', $row->id) . '" style="display:inline;">
-                    ' . csrf_field() . method_field('DELETE') . '
-                    <button type="submit" class="delete-doctor btn btn-sm btn-dark action-icon">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                  </form>';
+                                    ' . csrf_field() . method_field('DELETE') . '
+                                    <button type="submit" class="delete-doctor btn btn-sm btn-dark">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                  </form>';
 
-                    return $viewBtn . $editBtn . $deleteBtn;
+                    return $viewBtn . ' ' . $editBtn . ' ' . $deleteBtn;
                 })
-
                 ->rawColumns(['actions'])
                 ->make(true);
         }
@@ -75,38 +84,42 @@ class DoctorController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:doctors,email',
-            'phone' => 'required|string|max:255',
-            'address' => 'required|string|max:255',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'name'   => 'required|string|max:255',
+            'email'  => 'required|email|max:255|unique:doctors,email',
+            'phone'  => 'required|string|max:255',
+            'address'=> 'required|string|max:255',
+            'image'  => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
         $data = $request->only(['name', 'email', 'phone', 'address']);
+
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('doctors', 'public');
         }
 
         Doctor::create($data);
+
         return redirect()->route('doctors.index')->with('success', 'Doctor added successfully.');
     }
 
     public function update(Request $request, Doctor $doctor)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'required|string|max:255',
-            'address' => 'required|string|max:255',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'name'   => 'required|string|max:255',
+            'email'  => 'required|email|max:255',
+            'phone'  => 'required|string|max:255',
+            'address'=> 'required|string|max:255',
+            'image'  => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
         $data = $request->only(['name', 'email', 'phone', 'address']);
+
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('doctors', 'public');
         }
 
         $doctor->update($data);
+
         return redirect()->route('doctors.index')->with('success', 'Doctor updated successfully.');
     }
 

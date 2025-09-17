@@ -14,8 +14,11 @@
     vertical-align: middle;
     border: none;
 }
+#doctors-table thead th {
+    font-size: 1rem;   /* bigger than default */
+    font-weight: 700;     /* bold */
+}
 
-/* Doctor cell */
 .doctor-cell {
     display: flex;
     align-items: center;
@@ -39,13 +42,13 @@
     text-align: center !important; /* center header text */
 }
 
-/* Action icons */
+
 .action-icons {
     display: flex;
     justify-content: flex-start; /* left align inside cell */
     align-items: flex-start;     /* align icons to top */
     gap: 3px;
-    /* width: 32px; */
+
     padding: 0;
 }
 .action-icons a,
@@ -53,7 +56,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* width: 28px; */
+
     height: 28px;
     padding: 0;
     font-size: 1rem;
@@ -67,7 +70,7 @@
 .action-icons button:hover,
 .action-icons button:focus {
     background: transparent !important;
-    color: #000;
+    color: #2c1b1b;
     box-shadow: none !important;
 }
 
@@ -92,6 +95,15 @@
     padding: 2px 6px !important;
     font-size: 0.75rem !important;
 }
+
+/* Remove sorting arrows for the Actions column */
+#doctors-table th.action-icons.sorting,
+#doctors-table th.action-icons.sorting_asc,
+#doctors-table th.action-icons.sorting_desc {
+    background-image: none !important;
+    pointer-events: none; /* prevents accidental sorting */
+}
+
 </style>
 @endpush
 
@@ -251,7 +263,7 @@ $(function() {
         dom: '<"d-flex justify-content-between mb-2"lfr>rt<"d-flex justify-content-end mt-1"p>',
         language: {
             paginate: { previous:"&laquo;", next:"&raquo;" },
-            lengthMenu: "_MENU_",
+            lengthMenu: "Show _MENU_ entries",
             searchPlaceholder: "Search doctors..."
         }
     });

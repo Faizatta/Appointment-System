@@ -17,7 +17,7 @@
             </div>
             <div class="col">
               <label class="form-label">Email</label>
-              <input type="email" name="mail" value="{{ old('mail') }}" class="form-control" required>
+              <input type="mail" name="mail" value="{{ old('mail') }}" class="form-control" required>
             </div>
           </div>
 
