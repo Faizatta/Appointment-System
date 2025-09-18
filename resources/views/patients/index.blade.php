@@ -157,15 +157,16 @@
 @endpush
 
 @section('content')
-<div class="container mt-2" style="max-width: 1000px;">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0 fw-bold">Patients List</h4>
-        @can('add patient')
-        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#patientModal">
-            <i class="bi bi-plus-circle me-1"></i> Add Patient
-        </button>
-        @endcan
-    </div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0 fw-bold">Patients List</h4>
+    <button class="btn btn-primary btn-sm"
+            data-bs-toggle="modal"
+            data-bs-target="#patientModal"
+            @cannot('add patient') disabled @endcannot>
+        <i class="bi bi-plus-circle me-1"></i> Add Patient
+    </button>
+</div>
+
 
     <table id="patients-table" class="table table-sm align-middle">
         <thead>
@@ -178,8 +179,8 @@
             </tr>
         </thead>
     </table>
-</div>
-
+<div>
+/
 {{-- Add Patient Modal --}}
 @can('add patient')
 <div class="modal fade" id="patientModal" tabindex="-1" aria-hidden="true">

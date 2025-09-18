@@ -52,7 +52,7 @@ class PhoneVerificationController extends Controller
         $twilio = new Client(env('TWILIO_SID'), env('TWILIO_AUTH_TOKEN'));
         $twilio->messages->create($user->phone, [
             'from' => env('TWILIO_FROM'),
-            'body' => "Your OTP for password reset is: $otp. It expires in 5 minutes. aap ka bht bht shukaryaaa 💀 aga share na krnaa...okkk samj gai????"
+            'body' => "Your OTP for password reset is: $otp. It expires in 5 minutes."
         ]);
 
         $request->session()->put('phone', $user->phone);
