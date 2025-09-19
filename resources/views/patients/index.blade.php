@@ -103,6 +103,7 @@
     padding: 0.25rem 0.5rem;
     border-bottom: none;
 }
+
 .modal-title {
     font-size: 1rem;
     font-weight: 600;
@@ -180,7 +181,7 @@
         </thead>
     </table>
 <div>
-/
+
 {{-- Add Patient Modal --}}
 @can('add patient')
 <div class="modal fade" id="patientModal" tabindex="-1" aria-hidden="true">
@@ -372,25 +373,41 @@ $(function() {
     });
 
     // Add Patient AJAX
-    $('#addPatientForm').submit(function(e){
-        e.preventDefault();
-        let form = new FormData(this);
-        $.ajax({
-            url: $(this).attr('action'),
-            method: 'POST',
-            data: form,
-            processData: false,
-            contentType: false,
-            success: function(){
-                $('#patientModal').modal('hide');
-                table.ajax.reload(null,false);
-                Swal.fire('Added!','Patient has been added.','success');
-                $('#addPatientForm')[0].reset();
-                $('#add-image-preview').hide();
-            },
-            error: function(){ Swal.fire('Error!','Something went wrong.','error'); }
-        });
+$('#addPatientForm').submit(function(e){
+    e.preventDefault();
+    let formData = new FormData(this);
+
+    $.ajax({
+        url: $(this).attr('action'),
+        method: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response){
+            $('#patientModal').modal('hide');
+            $('.modal-backdrop').remove();
+            $('#patients-table').DataTable().ajax.reload(null,false);
+            $('#addPatientForm')[0].reset();
+            $('#add-image-preview').hide();
+
+            // Show success message
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: 'Patient added successfully!',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        },
+        error: function(xhr){
+            let msg = 'Something went wrong';
+            if(xhr.responseJSON && xhr.responseJSON.message){
+                msg = xhr.responseJSON.message;
+            }
+            Swal.fire('Error', msg, 'error');
+        }
     });
+});
 
     // View Patient
     $(document).on('click','.view-patient',function(){
