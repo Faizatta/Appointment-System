@@ -12,7 +12,10 @@ class DoctorController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $doctors = Doctor::withCount('patients')->select('doctors.*');
+            // load doctors + count patients + names
+            $doctors = Doctor::withCount('patients')
+                ->with('patients:id,doctor_id,name') // load only needed fields
+                ->select('doctors.*');
 
             return DataTables::of($doctors)
                 ->addColumn('doctor', function ($row) {
@@ -30,7 +33,14 @@ class DoctorController extends Controller
                     ];
                 })
                 ->addColumn('address', fn($row) => $row->address ?? '—')
-                ->addColumn('patients_count', fn($row) => $row->patients_count)
+
+                ->addColumn('patients_list', function ($row) {
+                    if ($row->patients_count === 0) {
+                        return '—';
+                    }
+                    return $row->patients->pluck('name')->join(', ');
+                })
+
                 ->addColumn('permissions', function ($row) {
                     $user = auth()->user();
                     return [
