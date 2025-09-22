@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Route;
 use App\Models\Doctor;
 use App\Models\Patient;
 
+
 Route::get('/', function () {
     return redirect()->route('login');
 });
@@ -66,7 +67,6 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-
 Route::post('/verify-phone', [PhoneVerificationController::class, 'verify'])->name('verify.phone.verify');
 Route::get('/resend-otp', [PhoneVerificationController::class, 'resend'])->name('resend.otp');
 
@@ -74,13 +74,27 @@ Route::controller(UserController::class)
     ->prefix('users')
     ->name('users.')
     ->group(function () {
-        Route::get('/', 'index')->name('index');   
+        Route::get('/', 'index')->name('index');
         Route::get('/create', 'create')->name('create');
         Route::post('/store', 'store')->name('store');
         Route::get('/{user}/edit', 'edit')->name('edit');
         Route::put('/{user}', 'update')->name('update');
         Route::delete('/{user}', 'destroy')->name('destroy');
     });
+
+Route::middleware('auth')->group(function () {
+
+    Route::get('/profiles', [ProfileController::class, 'index'])->name('profiles.index');
+
+    
+    Route::get('/profiles/edit', [ProfileController::class, 'edit'])->name('profiles.edit');
+
+    // Update profile
+    Route::patch('/profiles', [ProfileController::class, 'update'])->name('profiles.update');
+
+    // Delete profile
+    Route::delete('/profiles', [ProfileController::class, 'destroy'])->name('profiles.destroy');
+});
 
 
 require __DIR__ . '/auth.php';

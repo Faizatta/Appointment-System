@@ -20,7 +20,7 @@ class UserController extends Controller
                 })
                 ->addColumn('actions', function ($user) {
                     // Hide actions for admin
-                    if ($user->hasRole('admin')) {
+                    if ($user->hasRole('Admin')) {
                         return '<span class="text-muted">-</span>';
                     }
                     $roles = implode(',', $user->roles->pluck('name')->toArray());

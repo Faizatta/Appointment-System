@@ -19,10 +19,22 @@ return new class extends Migration {
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
+
+            // Profile-related fields
+            $table->string('profile_picture')->nullable(); // ✅ instead of "image"
+            $table->string('bio')->nullable();
+            $table->string('address')->nullable();
+            $table->date('dob')->nullable();
+
+            // OTP + verification
             $table->boolean('phone_verified')->default(false);
             $table->string('otp_code')->nullable();
             $table->timestamp('otp_expires_at')->nullable();
+
+            // Roles
+            $table->string('role')->default('user'); // ✅ role column
         });
+
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');

@@ -1,4 +1,4 @@
-<nav class="navbar navbar-light bg-light border-bottom px-3" style="height: 60px;">
+<nav class="navbar navbar-light border-bottom px-3" style="height: 60px;">
     <div class="container-fluid d-flex justify-content-between align-items-center">
 
         <span class="fw-bold fs-5 text-dark">Doctor Management</span>
@@ -22,13 +22,19 @@
                 </div>
             </button>
 
-             <ul class="dropdown-menu dropdown-menu-end text-center"
-                aria-labelledby="adminDropdown"
+            <ul class="dropdown-menu dropdown-menu-end text-center" aria-labelledby="adminDropdown"
                 style="min-width: 50px; padding: 0.2rem 0; font-size: 0.85rem;">
 
-                <li><a class="dropdown-item py-1" href="#">Profile</a></li>
+                <li>
+                    <a class="dropdown-item py-1" href="{{ route('profiles.index') }}">
+                        Profile
+                    </a>
+                </li>
+
                 <li><a class="dropdown-item py-1" href="#">Settings</a></li>
-                <li><hr class="dropdown-divider my-1"></li>
+                <li>
+                    <hr class="dropdown-divider my-1">
+                </li>
                 <li>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf

@@ -12,9 +12,9 @@ class DoctorController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            // load doctors + count patients + names
+       
             $doctors = Doctor::withCount('patients')
-                ->with('patients:id,doctor_id,name') // load only needed fields
+                ->with('patients:id,doctor_id,name')
                 ->select('doctors.*');
 
             return DataTables::of($doctors)

@@ -1,4 +1,5 @@
-<div class="d-flex flex-column bg-light min-vh-100" style="width: 180px; border-right: 1px solid #dee2e6;">
+<div class="d-flex flex-column " style="width: 180px; border-right: 1px solid #dee2e6; height: 100vh; overflow-y: auto;">
+
     <div class="fw-bold fs-5 px-3 py-3">POLYCLINIC</div>
 
     <ul class="nav flex-column mt-1">
@@ -27,7 +28,7 @@
         @endcan
 
 
-        @role('admin')
+        @role('Admin')
             <li class="nav-item">
                 <a class="nav-link {{ request()->is('roles*') ? 'active' : '' }}" href="{{ route('roles.roleindex') }}">
                     <i class="fas fa-user-shield me-2"></i> Roles

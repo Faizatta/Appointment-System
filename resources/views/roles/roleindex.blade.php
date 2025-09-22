@@ -82,7 +82,7 @@
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <h6 class="fw-bold mb-0">{{ $role->name }}</h6>
                                 <div class="d-flex gap-1">
-                                    @if (strtolower($role->name) !== 'admin')
+                                    @if (strtolower($role->name) !== 'Admin')
                                         <a href="#" data-bs-toggle="modal"
                                            data-bs-target="#editRoleModal{{ $role->id }}" class="text-dark"
                                            style="width: 20px; height: 20px; font-size: 0.7rem; display:flex; align-items:center; justify-content:center;">
@@ -191,7 +191,7 @@
 
 <script>
 $(function () {
- 
+
     var table = $('#users-table').DataTable({
         processing: true,
         serverSide: true,
@@ -238,7 +238,7 @@ $(function () {
 
         let rolesHtml = '<label class="form-label">Assign Roles</label>';
         @foreach ($roles as $role)
-            @if ($role->name !== 'admin')
+            @if ($role->name !== 'Admin')
                 rolesHtml += `
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" name="roles[]" value="{{ $role->name }}" ${roles.includes('{{ $role->name }}') ? 'checked' : ''}>
