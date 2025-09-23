@@ -4,22 +4,29 @@
         <span class="fw-bold fs-5 text-dark">Doctor Management</span>
 
         <div class="dropdown">
+            @php
+                $user = Auth::user();
+                $initials = strtoupper(substr($user->name, 0, 1));
+            @endphp
+
             <button class="d-flex align-items-center" type="button" id="adminDropdown" data-bs-toggle="dropdown"
                 aria-expanded="false">
 
-                @php
-                    $user = Auth::user();
-                    $initials = strtoupper(substr($user->name, 0, 1));
-                @endphp
-
-
                 <span class="fw-semibold text-dark me-2">{{ $user->name }}</span>
 
+                @if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture))
 
-                <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center"
-                    style="width: 32px; height: 32px; font-size: 14px;">
-                    {{ $initials }}
-                </div>
+                    <img src="{{ asset('storage/' . $user->profile_picture) }}"
+                         alt="Profile Picture"
+                         class="rounded-circle border"
+                         style="width: 32px; height: 32px; object-fit: cover;">
+                @else
+                  
+                    <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center"
+                        style="width: 32px; height: 32px; font-size: 14px;">
+                        {{ $initials }}
+                    </div>
+                @endif
             </button>
 
             <ul class="dropdown-menu dropdown-menu-end text-center" aria-labelledby="adminDropdown"
@@ -42,12 +49,9 @@
                     </form>
                 </li>
             </ul>
-
-
         </div>
     </div>
 </nav>
-
 
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>

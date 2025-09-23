@@ -86,7 +86,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/profiles', [ProfileController::class, 'index'])->name('profiles.index');
 
-    
+
     Route::get('/profiles/edit', [ProfileController::class, 'edit'])->name('profiles.edit');
 
     // Update profile
@@ -95,6 +95,8 @@ Route::middleware('auth')->group(function () {
     // Delete profile
     Route::delete('/profiles', [ProfileController::class, 'destroy'])->name('profiles.destroy');
 });
+Route::post('/doctors/bulk-delete', [DoctorController::class, 'bulkDelete'])->name('doctors.bulkDelete');
 
+Route::patch('/profiles/password', [ProfileController::class, 'updatePassword'])->name('profiles.updatePassword');
 
 require __DIR__ . '/auth.php';

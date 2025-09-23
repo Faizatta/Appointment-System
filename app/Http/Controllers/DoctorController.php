@@ -12,7 +12,7 @@ class DoctorController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-       
+
             $doctors = Doctor::withCount('patients')
                 ->with('patients:id,doctor_id,name')
                 ->select('doctors.*');
@@ -20,10 +20,10 @@ class DoctorController extends Controller
             return DataTables::of($doctors)
                 ->addColumn('doctor', function ($row) {
                     return [
-                        'id'       => $row->id,
-                        'name'     => $row->name,
+                        'id' => $row->id,
+                        'name' => $row->name,
                         'initials' => strtoupper(substr($row->name, 0, 2)),
-                        'image'    => $row->image ? Storage::url($row->image) : asset('default-avatar.png'),
+                        'image' => $row->image ? Storage::url($row->image) : asset('default-avatar.png'),
                     ];
                 })
                 ->addColumn('contact', function ($row) {
@@ -44,19 +44,19 @@ class DoctorController extends Controller
                 ->addColumn('permissions', function ($row) {
                     $user = auth()->user();
                     return [
-                        'canView'   => $user->hasRole('admin') || $user->can('view doctor'),
-                        'canEdit'   => $user->hasRole('admin') || $user->can('edit doctor'),
+                        'canView' => $user->hasRole('admin') || $user->can('view doctor'),
+                        'canEdit' => $user->hasRole('admin') || $user->can('edit doctor'),
                         'canDelete' => $user->hasRole('admin') || $user->can('delete doctor'),
                     ];
                 })
                 ->addColumn('actions', function ($row) {
                     $doctorArray = [
-                        'id'       => $row->id,
-                        'name'     => $row->name,
-                        'email'    => $row->email,
-                        'phone'    => $row->phone,
-                        'address'  => $row->address,
-                        'image'    => $row->image ? Storage::url($row->image) : asset('default-avatar.png'),
+                        'id' => $row->id,
+                        'name' => $row->name,
+                        'email' => $row->email,
+                        'phone' => $row->phone,
+                        'address' => $row->address,
+                        'image' => $row->image ? Storage::url($row->image) : asset('default-avatar.png'),
                         'initials' => strtoupper(substr($row->name, 0, 2)),
                     ];
                     $doctorJson = e(json_encode($doctorArray));
@@ -86,15 +86,26 @@ class DoctorController extends Controller
 
         return view('doctors.index');
     }
+    public function bulkDelete(Request $request)
+    {
+        $ids = $request->ids;
+        if (!$ids || count($ids) === 0) {
+            return response()->json(['error' => 'No doctors selected'], 400);
+        }
+
+        Doctor::whereIn('id', $ids)->delete();
+
+        return response()->json(['success' => 'Selected doctors deleted successfully!']);
+    }
 
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'    => 'required|string|max:255',
-            'email'   => 'nullable|email|max:255',
-            'phone'   => 'nullable|string|max:20',
+            'name' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:255',
-            'image'   => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
 
         if ($request->hasFile('image')) {
@@ -111,11 +122,11 @@ class DoctorController extends Controller
     public function update(Request $request, Doctor $doctor)
     {
         $data = $request->validate([
-            'name'    => 'required|string|max:255',
-            'email'   => 'nullable|email|max:255',
-            'phone'   => 'nullable|string|max:20',
+            'name' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:255',
-            'image'   => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
 
         if ($request->hasFile('image')) {

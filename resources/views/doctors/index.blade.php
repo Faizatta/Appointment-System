@@ -40,12 +40,7 @@
     }
 
     /* Compact search + entries */
-    .dataTables_wrapper .dataTables_filter input {
-        font-size: 0.75rem !important;
-        padding: 2px 4px !important;
-        height: 26px !important;
-    }
-
+    .dataTables_wrapper .dataTables_filter input,
     .dataTables_wrapper .dataTables_length select {
         font-size: 0.75rem !important;
         padding: 2px 4px !important;
@@ -101,21 +96,35 @@
         pointer-events: none;
         background-image: none !important;
     }
+
+    /* Bulk Delete Button */
+    #bulkDeleteBtn {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    #bulkDeleteBtn:not(:disabled) {
+        opacity: 1;
+        cursor: pointer;
+    }
 </style>
 @endpush
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0 fw-bold">Doctors List</h4>
-    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#doctorModal"
-        @cannot('add doctor') disabled @endcannot>
-        <i class="bi bi-plus-circle me-1"></i> Add Doctor
-    </button>
+    <div>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#doctorModal"
+            @cannot('add doctor') disabled @endcannot>
+            <i class="bi bi-plus-circle me-1"></i> Add Doctor
+        </button>
+    </div>
 </div>
 
 <table id="doctors-table" class="table table-sm align-middle">
     <thead>
         <tr>
+            <th><input type="checkbox" id="checkAll"></th>
             <th>Doctor</th>
             <th>Contact</th>
             <th>Address</th>
@@ -129,7 +138,7 @@
 <div class="modal fade" id="doctorModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
+            <div class="modal-header bg-slate-600 text-white">
                 <h5 class="modal-title">Add Doctor</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -240,8 +249,7 @@
                         <p><strong>Address:</strong> <span id="viewDoctorAddress"></span></p>
                     </div>
                     <div class="col-md-4 text-center">
-                        <img id="viewDoctorImage" width="140" height="140" class="border rounded"
-                             style="object-fit:cover; display:none;">
+                        <img id="viewDoctorImage" width="140" height="140" class="border rounded" style="object-fit:cover; display:none;">
                     </div>
                 </div>
             </div>
@@ -257,62 +265,82 @@
 <script>
 $(function() {
     let table = $('#doctors-table').DataTable({
-        processing: true,
-        serverSide: true,
-        ajax: "{{ route('doctors.index') }}",
-        pageLength: 5,
-        language: {
-            paginate: { previous: '&laquo;', next: '&raquo;' }
-        },
-        columns: [
-            {
-                data: 'doctor',
-                name: 'doctor',
-                render: function(d, t) {
-                    if (typeof d === 'string') d = { name: d, image: null };
-                    if (t === 'display') {
-                        let initials = '';
-                        if (d.name) {
-                            let parts = d.name.trim().split(' ');
-                            initials = parts.length > 1 ?
-                                parts[0][0] + parts[parts.length - 1][0] :
-                                parts[0][0];
-                            initials = initials.toUpperCase();
-                        }
-                        let img = d.image ?
-                            `<img src="${d.image}" alt="Doctor">` :
-                            `<div class="initials">${initials}</div>`;
-                        return `<div class="doctor-cell">${img}<span>${d.name}</span></div>`;
-                    }
-                    return d.name;
+    processing: true,
+    serverSide: true,
+    ajax: "{{ route('doctors.index') }}",
+    pageLength: 5,
+    lengthMenu: [5,10,25,50],
+    language: {
+        paginate: { previous: '&laquo;', next: '&raquo;' },
+        lengthMenu: "Show _MENU_ entries"
+    },
+    dom: '<"d-flex align-items-center justify-content-between mb-2"<"d-flex align-items-center gap-2"l<"datatable-buttons">><"d-flex"f>>rtip',
+    columns: [
+        { data: 'id', render: id=>`<input type="checkbox" class="row-check" value="${id}">`, orderable:false, searchable:false },
+        { data: 'doctor', name: 'doctor',
+          render: function(d,t){
+            if(typeof d==='string') d={name:d,image:null};
+            if(t==='display'){
+                let initials='';
+                if(d.name){
+                    let parts=d.name.trim().split(' ');
+                    initials = parts.length>1 ? parts[0][0]+parts[parts.length-1][0] : parts[0][0];
+                    initials = initials.toUpperCase();
                 }
-            },
-            {
-                data: 'contact',
-                name: 'contact',
-                render: d =>
-                    `<div>${d.email ?? '—'}<div class="text-muted small">${d.phone ?? '—'}</div></div>`
-            },
-            { data: 'address', name: 'address' },
-            {
-                data: 'patients',
-                name: 'patients',
-                render: function(d) {
-                    if (!d || d.length === 0) return 'No Patients';
-                    if (Array.isArray(d)) return d.map(p => p.name).join(', ');
-                    return d;
-                }
-            },
-            {
-                data: 'actions',
-                name: 'actions',
-                orderable: false,
-                searchable: false
+                let img = d.image ? `<img src="${d.image}" alt="Doctor">` : `<div class="initials">${initials}</div>`;
+                return `<div class="doctor-cell">${img}<span>${d.name}</span></div>`;
             }
-        ]
+            return d.name;
+          }
+        },
+        { data:'contact', name:'contact', render:d=>`<div>${d.email??'—'}<div class="text-muted small">${d.phone??'—'}</div></div>` },
+        { data:'address', name:'address' },
+        { data:'patients', name:'patients', render:d=>!d||d.length===0?'No Patients':Array.isArray(d)?d.map(p=>p.name).join(', '):d },
+        { data:'actions', name:'actions', orderable:false, searchable:false }
+    ]
+});
+    // Bulk Delete Button
+    $("div.datatable-buttons").html(`
+        <button id="bulkDeleteBtn" class="btn btn-sm d-flex align-items-center"
+            style="padding: 2px 8px; font-size: 0.75rem; gap: 4px; background: none; color: #dc3545; border:1px solid #dc3545; border-radius:4px;" disabled>
+            <i class="bi bi-trash" style="font-size:0.8rem;"></i> Delete
+        </button>
+    `);
+
+    // Select/Deselect all
+    $(document).on('change','#checkAll',function(){
+        $('.row-check').prop('checked',$(this).prop('checked'));
+        toggleBulkButton();
+    });
+    $(document).on('change','.row-check',toggleBulkButton);
+    function toggleBulkButton(){
+        let anyChecked=$('.row-check:checked').length>0;
+        $('#bulkDeleteBtn').prop('disabled',!anyChecked);
+    }
+
+    // Bulk Delete
+    $(document).on('click','#bulkDeleteBtn',function(){
+        let ids=$('.row-check:checked').map(function(){ return $(this).val(); }).get();
+        if(ids.length===0) return;
+        Swal.fire({
+            title:'Are you sure?',
+            text:"This will delete selected doctors",
+            icon:'warning',
+            showCancelButton:true
+        }).then(result=>{
+            if(result.isConfirmed){
+                $.post("{{ route('doctors.bulkDelete') }}",{ids:ids,_token:"{{ csrf_token() }}"})
+                .done(res=>{
+                    $('#checkAll').prop('checked',false);
+                    table.ajax.reload();
+                    $('#bulkDeleteBtn').prop('disabled',true);
+                    Swal.fire('Deleted!',res.success,'success');
+                }).fail(()=>Swal.fire('Error!','Something went wrong.','error'));
+            }
+        });
     });
 
-    // Add Doctor Image preview
+    // Image previews
     $('#add-image').on('change', function() {
         const f = this.files[0];
         if (f) {
@@ -321,8 +349,6 @@ $(function() {
             r.readAsDataURL(f);
         } else $('#add-image-preview').addClass('d-none');
     });
-
-    // Edit Doctor Image preview
     $('#edit-image').on('change', function() {
         const f = this.files[0];
         if (f) {
@@ -333,60 +359,45 @@ $(function() {
     });
 
     // View Doctor
-    $(document).on('click', '.view-doctor', function() {
-        let d = $(this).data('doctor');
+    $(document).on('click','.view-doctor',function(){
+        let d=$(this).data('doctor');
         $('#viewDoctorName').text(d.name);
-        $('#viewDoctorMail').text(d.email ?? '—');
-        $('#viewDoctorPhone').text(d.phone ?? '—');
-        $('#viewDoctorAddress').text(d.address ?? '—');
-        if (Array.isArray(d.patients) && d.patients.length > 0) {
-            $('#viewDoctorPatients').text(d.patients.map(p => p.name).join(', '));
-        } else {
-            $('#viewDoctorPatients').text('No Patients');
-        }
-        if (d.image) {
-            $('#viewDoctorImage').attr('src', d.image).show();
-        } else {
-            $('#viewDoctorImage').hide();
-        }
+        $('#viewDoctorMail').text(d.email??'—');
+        $('#viewDoctorPhone').text(d.phone??'—');
+        $('#viewDoctorAddress').text(d.address??'—');
+        $('#viewDoctorPatients').text(Array.isArray(d.patients)&&d.patients.length>0?d.patients.map(p=>p.name).join(', '):'No Patients');
+        if(d.image) $('#viewDoctorImage').attr('src',d.image).show();
+        else $('#viewDoctorImage').hide();
         $('#viewDoctorModal').modal('show');
     });
 
     // Edit Doctor
-    $(document).on('click', '.edit-doctor', function() {
-        let d = $(this).data('doctor');
-        $('#editDoctorForm').attr('action', '/doctors/' + d.id);
+    $(document).on('click','.edit-doctor',function(){
+        let d=$(this).data('doctor');
+        $('#editDoctorForm').attr('action','/doctors/'+d.id);
         $('#editDoctorName').val(d.name);
         $('#editDoctorMail').val(d.email);
         $('#editDoctorPhone').val(d.phone);
         $('#editDoctorAddress').val(d.address);
-        if (d.image) {
-            $('#edit-image-preview').attr('src', d.image).removeClass('d-none');
-        } else {
-            $('#edit-image-preview').addClass('d-none');
-        }
+        if(d.image) $('#edit-image-preview').attr('src',d.image).removeClass('d-none');
+        else $('#edit-image-preview').addClass('d-none');
         $('#editDoctorModal').modal('show');
     });
 
-    // Delete Doctor
-    $(document).on('click', '.delete-doctor', function(e) {
+    // Single Delete
+    $(document).on('click','.delete-doctor',function(e){
         e.preventDefault();
-        let form = $(this).closest('form');
-        Swal.fire({
-            title: 'Are you sure?',
-            icon: 'warning',
-            showCancelButton: true
-        }).then(r => {
-            if (r.isConfirmed) {
-                $.post(form.attr('action'), form.serialize())
-                    .done(() => {
-                        table.ajax.reload();
-                        Swal.fire('Deleted!', 'Doctor deleted.', 'success');
-                    })
-                    .fail(() => Swal.fire('Error!', 'Something went wrong.', 'error'));
+        let form=$(this).closest('form');
+        Swal.fire({title:'Are you sure?',icon:'warning',showCancelButton:true})
+        .then(r=>{
+            if(r.isConfirmed){
+                $.post(form.attr('action'),form.serialize())
+                .done(()=>{table.ajax.reload();Swal.fire('Deleted!','Doctor deleted.','success');})
+                .fail(()=>Swal.fire('Error!','Something went wrong.','error'));
             }
         });
     });
+
 });
 </script>
 @endpush

@@ -18,9 +18,7 @@ class ProfileController extends Controller
      */
     public function index(Request $request): View
     {
-        // Refresh user instance to get latest data
         $user = $request->user()->fresh();
-
         return view('profiles.index', compact('user'));
     }
 
@@ -35,47 +33,21 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update profile details OR password.
+     * Update profile details (not password).
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $user = $request->user();
 
-        // --------------------------
-        // Handle password update
-        // --------------------------
-        if ($request->filled('current_password') && $request->filled('password')) {
-            if (! Hash::check($request->current_password, $user->password)) {
-                return Redirect::back()->withErrors([
-                    'current_password' => 'Your current password is incorrect.',
-                ]);
-            }
-
-            $request->validate([
-                'password' => ['required', 'string', 'min:8', 'confirmed'],
-            ]);
-
-            $user->password = Hash::make($request->password);
-            $user->save();
-
-            return Redirect::route('profiles.index')
-                ->with('status', 'Password updated successfully!');
-        }
-
-        // --------------------------
         // Handle profile picture
-        // --------------------------
         if ($request->hasFile('profile_picture')) {
-            // Delete old picture if exists
             if ($user->profile_picture && Storage::disk('public')->exists($user->profile_picture)) {
                 Storage::disk('public')->delete($user->profile_picture);
             }
-
-            $path = $request->file('profile_picture')->store('profiles', 'public');
-            $user->profile_picture = $path;
+            $user->profile_picture = $request->file('profile_picture')->store('profiles', 'public');
         }
 
-   
+        // Update details
         $user->name = $request->input('name');
         $user->email = $request->input('email');
         $user->phone = $request->input('phone');
@@ -83,7 +55,7 @@ class ProfileController extends Controller
         $user->address = $request->input('address');
         $user->dob = $request->input('dob');
 
-        // Reset email verification if email changed
+        // Reset email verification if changed
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
         }
@@ -91,7 +63,32 @@ class ProfileController extends Controller
         $user->save();
 
         return Redirect::route('profiles.index')
-            ->with('status', 'Profile updated successfully!');
+            ->with('success', 'Profile updated successfully!');
+    }
+
+    /**
+     * Update password only.
+     */
+    public function updatePassword(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'current_password' => ['required'],
+            'password' => ['required', 'min:8', 'confirmed'],
+        ]);
+
+        $user = Auth::user();
+
+        // Check current password
+        if (!Hash::check($request->current_password, $user->password)) {
+            return back()->with('error', 'Your current password is incorrect.');
+        }
+
+        // Update password
+        $user->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        return back()->with('success', 'Password updated successfully!');
     }
 
     /**
@@ -116,6 +113,6 @@ class ProfileController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/')->with('status', 'Your account has been deleted.');
+        return Redirect::to('/')->with('success', 'Your account has been deleted.');
     }
 }

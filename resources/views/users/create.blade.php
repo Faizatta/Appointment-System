@@ -40,7 +40,7 @@
                         <div class="col-md-12 mb-3">
                             <label class="form-label fw-semibold">Assign Roles</label>
                             <div class="d-flex flex-wrap gap-2">
-                                @foreach ($roles->where('name', '!=', 'admin') as $role)
+                                @foreach ($roles->where('name', '!=', 'Admin') as $role)
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" name="roles[]"
                                             value="{{ $role->name }}" id="role{{ $role->id }}">
