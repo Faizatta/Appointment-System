@@ -13,8 +13,7 @@ class DoctorController extends Controller
     {
         if ($request->ajax()) {
 
-            $doctors = Doctor::withCount('patients')
-                ->with('patients:id,doctor_id,name')
+            $doctors = Doctor::with('patients:id,doctor_id,name')
                 ->select('doctors.*');
 
             return DataTables::of($doctors)
@@ -34,21 +33,14 @@ class DoctorController extends Controller
                 })
                 ->addColumn('address', fn($row) => $row->address ?? '—')
 
-                ->addColumn('patients_list', function ($row) {
-                    if ($row->patients_count === 0) {
-                        return '—';
-                    }
-                    return $row->patients->pluck('name')->join(', ');
+                // ✅ match frontend: patients instead of patients_list
+                ->addColumn('patients', function ($row) {
+                    if ($row->patients->isEmpty())
+                        return null;
+                    return $row->patients->pluck('name')->implode(', '); // comma-separated string
                 })
 
-                ->addColumn('permissions', function ($row) {
-                    $user = auth()->user();
-                    return [
-                        'canView' => $user->hasRole('admin') || $user->can('view doctor'),
-                        'canEdit' => $user->hasRole('admin') || $user->can('edit doctor'),
-                        'canDelete' => $user->hasRole('admin') || $user->can('delete doctor'),
-                    ];
-                })
+
                 ->addColumn('actions', function ($row) {
                     $doctorArray = [
                         'id' => $row->id,
@@ -57,16 +49,14 @@ class DoctorController extends Controller
                         'phone' => $row->phone,
                         'address' => $row->address,
                         'image' => $row->image ? Storage::url($row->image) : asset('default-avatar.png'),
-                        'initials' => strtoupper(substr($row->name, 0, 2)),
+                        'patients' => $row->patients->map(fn($p) => ['name' => $p->name]),
                     ];
                     $doctorJson = e(json_encode($doctorArray));
 
-                    $viewBtn = '<button class="btn btn-sm view-doctor" data-doctor=\'' . $doctorJson . '\' title="View">
-                                    <i class="bi bi-eye"></i>
-                                </button>';
+                    $viewBtn = '<button class="btn btn-sm view-doctor" data-bs-toggle="tooltip" title="View" data-doctor=\'' . $doctorJson . '\'><i class="bi bi-eye"></i></button>';
 
                     $editBtn = '<button class="btn btn-sm edit-doctor" data-doctor=\'' . $doctorJson . '\' title="Edit"
-                                ' . (!(auth()->user()->hasRole('admin') || auth()->user()->can('edit doctor')) ? 'disabled' : '') . '>
+                                    ' . (!(auth()->user()->hasRole('Admin') || auth()->user()->can('edit doctor')) ? 'disabled' : '') . '>
                                     <i class="bi bi-pencil-square"></i>
                                 </button>';
 
@@ -86,6 +76,7 @@ class DoctorController extends Controller
 
         return view('doctors.index');
     }
+
     public function bulkDelete(Request $request)
     {
         $ids = $request->ids;

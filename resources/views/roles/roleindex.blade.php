@@ -20,7 +20,6 @@
         display: flex;
         justify-content: center;
         align-items: center;
-
     }
 
     .action-icons a,
@@ -39,26 +38,55 @@
         color: #000 !important;
     }
 
+    .action-icons a,
+    .action-icons button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 28px;
+        font-size: 0.85rem;
+        background: none !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
 
+    .card-body .action-icons i {
+        font-size: 0.7rem;
+    }
 
-.action-icons a,
-.action-icons button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 28px;
-    font-size: 0.85rem;
-    background: none !important;
-    border: none !important;
-    box-shadow: none !important;
-}
+    /* Bulk Delete Button */
+    #bulkDeleteBtn {
+        opacity: 0.6;
+        cursor: not-allowed;
+        display: none;
+    }
 
+    #bulkDeleteBtn:not(:disabled) {
+        opacity: 1;
+        cursor: pointer;
+    }
 
-.card-body .action-icons i {
-    font-size: 0.7rem;
-}
+    /* Users table actions column */
+    #users-table th.actions,
+    #users-table td.actions-cell {
+        text-align: center;
+        vertical-align: middle;
+    }
 
+    /* Admin row styling */
+    .admin-row {
+        background-color: #f8f9fa !important;
+    }
+
+    .admin-badge {
+        background-color: #dc3545;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 0.7rem;
+        font-weight: bold;
+    }
 </style>
 @endpush
 
@@ -120,7 +148,6 @@
     @endif
 </div>
 
-
 <div class="container mt-4" style="max-width: 1000px;">
     <div class="d-flex justify-content-end mb-3">
         <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createUserModal">
@@ -133,10 +160,11 @@
     <table class="table-sm align-middle" id="users-table" style="width:100%">
         <thead>
             <tr>
+                <th width="5%"><input type="checkbox" id="checkAll"></th>
                 <th>Name</th>
                 <th>Email</th>
                 <th>Roles</th>
-                <th class="text-center">Actions</th>
+                <th class="text-center actions">Actions</th>
             </tr>
         </thead>
     </table>
@@ -144,7 +172,6 @@
 
 @include('users.create', ['roles' => $roles])
 @include('roles.createrole')
-
 
 <div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-s">
@@ -198,26 +225,189 @@ $(function () {
         pageLength: 5,
         lengthMenu: [5, 10, 25, 50],
         ajax: "{{ route('users.index') }}",
+        dom: '<"d-flex align-items-center justify-content-between mb-2"<"d-flex align-items-center gap-2"l<"datatable-buttons">><"d-flex"f>>rtip',
         columns: [
-            { data: 'name', name: 'name' },
+            {
+                data: 'id',
+                render: function(data, type, row) {
+                    // Check if user is admin - handle both boolean and string formats
+                    let isAdmin = false;
+
+                    // Check is_admin field
+                    if (row.is_admin === true || row.is_admin === 1 || row.is_admin === '1') {
+                        isAdmin = true;
+                    }
+
+                    // Check roles string for admin
+                    if (row.roles && typeof row.roles === 'string' &&
+                        row.roles.toLowerCase().includes('admin')) {
+                        isAdmin = true;
+                    }
+
+                    // Check roles array for admin
+                    if (Array.isArray(row.roles_array) &&
+                        row.roles_array.some(role => role.toLowerCase().includes('admin'))) {
+                        isAdmin = true;
+                    }
+
+                    // Don't show checkbox for admin users
+                    if (isAdmin) {
+                        return '<span class="text-muted">—</span>';
+                    }
+
+                    return `<input type="checkbox" class="row-check" value="${data}">`;
+                },
+                orderable: false,
+                searchable: false,
+                className: 'text-center'
+            },
+            {
+                data: 'name',
+                name: 'name',
+                render: function(data, type, row) {
+                    // Check if user is admin
+                    let isAdmin = false;
+                    if (row.is_admin === true || row.is_admin === 1 || row.is_admin === '1') {
+                        isAdmin = true;
+                    }
+                    if (row.roles && typeof row.roles === 'string' &&
+                        row.roles.toLowerCase().includes('admin')) {
+                        isAdmin = true;
+                    }
+
+
+                    return data;
+                }
+            },
             { data: 'email', name: 'email' },
             { data: 'roles', name: 'roles', orderable: false, searchable: false },
-            { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-center action-icons' }
-        ]
+            {
+                data: 'actions',
+                name: 'actions',
+                orderable: false,
+                searchable: false,
+                className: 'text-center action-icons actions-cell'
+            }
+        ],
+        rowCallback: function(row, data) {
+            // Add admin row styling
+            let isAdmin = false;
+            if (data.is_admin === true || data.is_admin === 1 || data.is_admin === '1') {
+                isAdmin = true;
+            }
+            if (data.roles && typeof data.roles === 'string' &&
+                data.roles.toLowerCase().includes('admin')) {
+                isAdmin = true;
+            }
+
+            if (isAdmin) {
+                $(row).addClass('admin-row');
+            }
+        }
     });
 
-    // SweetAlert delete
-    $(document).on('submit', '.delete-role-form, .delete-user-form', function(e) {
-        e.preventDefault();
-        let form = this;
+    // Add bulk delete button to datatable
+    $("div.datatable-buttons").html(`
+        <button id="bulkDeleteBtn" class="btn btn-sm d-flex align-items-center d-none"
+            style="padding: 2px 8px; font-size: 0.75rem; gap: 4px; background: none; color: #dc3545; border:1px solid #dc3545; border-radius:4px;">
+            <i class="fas fa-trash" style="font-size:0.8rem;"></i> Delete all
+        </button>
+    `);
+
+    // === Bulk Select ===
+    $(document).on('change', '#checkAll', function() {
+        $('.row-check').prop('checked', $(this).prop('checked'));
+        toggleBulkButton();
+    });
+
+    $(document).on('change', '.row-check', function() {
+        toggleBulkButton();
+
+        // Update "Check All" checkbox state
+        let totalCheckboxes = $('.row-check').length;
+        let checkedCheckboxes = $('.row-check:checked').length;
+
+        if (checkedCheckboxes === 0) {
+            $('#checkAll').prop('indeterminate', false).prop('checked', false);
+        } else if (checkedCheckboxes === totalCheckboxes) {
+            $('#checkAll').prop('indeterminate', false).prop('checked', true);
+        } else {
+            $('#checkAll').prop('indeterminate', true);
+        }
+    });
+
+    function toggleBulkButton() {
+        let checkedCount = $('.row-check:checked').length;
+        if (checkedCount > 0) {
+            $('#bulkDeleteBtn').removeClass('d-none').text(`Delete all`);
+        } else {
+            $('#bulkDeleteBtn').addClass('d-none');
+        }
+    }
+
+    // === Bulk Delete ===
+    $(document).on('click', '#bulkDeleteBtn', function() {
+        let ids = $('.row-check:checked').map(function() {
+            return $(this).val();
+        }).get();
+
+        if (ids.length === 0) return;
+
         Swal.fire({
             title: 'Are you sure?',
-            text: "This action cannot be undone!",
+            text: `This will permanently delete ${ids.length} selected user${ids.length > 1 ? 's' : ''}`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it',
+            confirmButtonText: 'Yes, delete them!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading state
+                let originalText = $('#bulkDeleteBtn').html();
+                $('#bulkDeleteBtn').html('<i class="fas fa-spinner fa-spin"></i> Deleting...').prop('disabled', true);
+
+                $.ajax({
+                    url: "{{ route('users.bulkDelete') }}",
+                    method: 'POST',
+                    data: {
+                        ids: ids,
+                        _token: "{{ csrf_token() }}"
+                    },
+                    success: function(response) {
+                        $('#checkAll').prop('checked', false).prop('indeterminate', false);
+                        table.ajax.reload();
+                        $('#bulkDeleteBtn').addClass('d-none').html(originalText).prop('disabled', false);
+                        Swal.fire('Deleted!', response.success || 'Users deleted successfully.', 'success');
+                    },
+                    error: function(xhr) {
+                        $('#bulkDeleteBtn').html(originalText).prop('disabled', false);
+                        let errorMessage = 'Something went wrong.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        Swal.fire('Error!', errorMessage, 'error');
+                    }
+                });
+            }
+        });
+    });
+
+    // SweetAlert delete for single items
+    $(document).on('submit', '.delete-role-form, .delete-user-form', function(e) {
+        e.preventDefault();
+        let form = this;
+        let itemType = $(form).hasClass('delete-role-form') ? 'role' : 'user';
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: `This will permanently delete this ${itemType}!`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
             cancelButtonText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
@@ -238,7 +428,7 @@ $(function () {
 
         let rolesHtml = '<label class="form-label">Assign Roles</label>';
         @foreach ($roles as $role)
-            @if ($role->name !== 'Admin')
+            @if (strtolower($role->name) !== 'admin')
                 rolesHtml += `
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" name="roles[]" value="{{ $role->name }}" ${roles.includes('{{ $role->name }}') ? 'checked' : ''}>
@@ -252,6 +442,22 @@ $(function () {
 
         var editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
         editModal.show();
+    });
+
+    table.on('draw', function() {
+        $('#checkAll').prop('checked', false).prop('indeterminate', false);
+        $('#bulkDeleteBtn').addClass('d-none');
+    });
+
+    // Prevent accidental admin deletion
+    $(document).on('click', '.delete-user-form button[type="submit"]', function(e) {
+        let form = $(this).closest('form');
+        let actionUrl = form.attr('action');
+
+
+        let userId = actionUrl.split('/').pop();
+
+
     });
 });
 </script>

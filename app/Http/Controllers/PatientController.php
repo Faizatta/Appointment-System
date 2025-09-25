@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use App\Models\Patient;
 use App\Models\Doctor;
 use Illuminate\Http\Request;
@@ -16,12 +15,19 @@ class PatientController extends Controller
             $patients = Patient::with('doctor')->select('patients.*');
 
             return DataTables::of($patients)
-                ->addColumn('patient', function ($row) {
+                ->addColumn('name', function ($row) {
+                    $initials = '';
+                    if ($row->name) {
+                        $parts = explode(' ', trim($row->name));
+                        $initials = count($parts) > 1
+                            ? strtoupper($parts[0][0] . $parts[count($parts) - 1][0])
+                            : strtoupper($parts[0][0]);
+                    }
+
                     return [
-                        'id'       => $row->id,
-                        'name'     => $row->name,
-                        'initials' => strtoupper(substr($row->name, 0, 2)),
-                        'image'    => $row->image ? Storage::url($row->image) : asset('default-avatar.png'),
+                        'name' => $row->name,
+                        'image' => $row->image ? Storage::url($row->image) : null,
+                        'initials' => $initials
                     ];
                 })
                 ->addColumn('doctor', function ($row) {
@@ -29,46 +35,43 @@ class PatientController extends Controller
                 })
                 ->addColumn('contact', function ($row) {
                     return [
-                        'mail'  => $row->mail,
-                        'phone' => $row->phone,
+                        'mail' => $row->mail ?? '—',
+                        'phone' => $row->phone ?? '—',
                     ];
                 })
                 ->addColumn('address', function ($row) {
                     return $row->address ?? '—';
                 })
-                ->addColumn('permissions', function ($row) {
-                    $user = auth()->user();
-                    return [
-                        'canView'   => $user->hasRole('admin') || $user->can('view patient'),
-                        'canEdit'   => $user->hasRole('admin') || $user->can('edit patient'),
-                        'canDelete' => $user->hasRole('admin') || $user->can('delete patient'),
-                    ];
-                })
                 ->addColumn('actions', function ($row) {
-                    $patientArray = $row->toArray();
-                    $patientArray['doctor'] = $row->doctor ? $row->doctor->name : '—';
-                    $patientArray['contact'] = [
-                        'mail'  => $row->mail,
+                    $patientArray = [
+                        'id' => $row->id,
+                        'name' => $row->name,
+                        'mail' => $row->mail,
                         'phone' => $row->phone,
+                        'address' => $row->address,
+                        'doctor' => $row->doctor ? $row->doctor->name : '—',
+                        'doctor_id' => $row->doctor_id,
+                        'image' => $row->image ? Storage::url($row->image) : null,
                     ];
                     $patientJson = e(json_encode($patientArray));
 
-                    $viewBtn = '<button class="btn btn-sm view-patient" data-patient=\'' . $patientJson . '\' title="View">
-                                    <i class="bi bi-eye"></i>
-                                </button>';
+                    $viewBtn = '<button class="btn btn-sm btn-info view-patient" data-bs-toggle="tooltip" title="View" data-patient=\'' . $patientJson . '\' style="display:inline-flex; align-items:center; justify-content:center; margin-right:2px;"><i class="bi bi-eye"></i></button>';
 
-                    $editBtn = '<button class="btn btn-sm edit-patient" data-patient=\'' . $patientJson . '\' title="Edit"
-                                ' . (!(auth()->user()->hasRole('admin') || auth()->user()->can('edit patient')) ? 'disabled' : '') . '>
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>';
+                    $editBtn = '<button class="btn btn-sm btn-primary edit-patient" data-patient=\'' . $patientJson . '\' title="Edit"
+            ' . (!(auth()->user()->hasRole('Admin') || auth()->user()->can('edit patient')) ? 'disabled' : '') . '
+            style="display:inline-flex; align-items:center; justify-content:center; margin-right:2px;">
+                <i class="bi bi-pencil-square"></i>
+            </button>';
 
-                    $deleteForm = '<form action="' . route('patients.destroy', $row->id) . '" method="POST" style="display:inline;">
-                                        ' . csrf_field() . method_field("DELETE") . '
-                                        <button type="submit" class="btn btn-sm delete-patient" title="Delete"
-                                            ' . (!(auth()->user()->hasRole('admin') || auth()->user()->can('delete patient')) ? 'disabled' : '') . '>
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                   </form>';
+                    $deleteForm = '<form action="' . route('patients.destroy', $row->id) . '" method="POST" style="display:inline-flex; margin:0; padding:0;">
+                    ' . csrf_field() . method_field("DELETE") . '
+                    <button type="submit" class="btn btn-sm delete-patient" title="Delete"
+                        ' . (!(auth()->user()->hasRole('admin') || auth()->user()->can('delete patient')) ? 'disabled' : '') . '
+                        style="display:inline-flex; align-items:center; justify-content:center;">
+                        <i class="bi bi-trash"></i>
+                    </button>
+               </form>';
+
 
                     return '<div class="action-icons">' . $viewBtn . $editBtn . $deleteForm . '</div>';
                 })
@@ -82,61 +85,134 @@ class PatientController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'name'      => 'required|string|max:255',
-            'doctor_id' => 'nullable|exists:doctors,id',
-            'address'   => 'nullable|string|max:255',
-            'mail'      => 'nullable|email|max:255',
-            'phone'     => 'nullable|string|max:20',
-            'image'     => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-        ]);
+        try {
+            $data = $request->validate([
+                'name' => 'required|string|max:255',
+                'doctor_id' => 'nullable|exists:doctors,id',
+                'address' => 'nullable|string|max:255',
+                'mail' => 'nullable|email|max:255',
+                'phone' => 'nullable|string|max:20',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            ]);
 
-        if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('patients', 'public');
+            if ($request->hasFile('image')) {
+                $data['image'] = $request->file('image')->store('patients', 'public');
+            }
+
+            Patient::create($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Patient added successfully.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
         }
+    }
 
-        Patient::create($data);
+    public function show(Patient $patient)
+    {
+        $patient->load('doctor');
+        return response()->json([
+            'id' => $patient->id,
+            'name' => $patient->name,
+            'mail' => $patient->mail,
+            'phone' => $patient->phone,
+            'address' => $patient->address,
+            'doctor' => $patient->doctor ? $patient->doctor->name : null,
+            'image' => $patient->image ? Storage::url($patient->image) : null,
+        ]);
+    }
 
-        return $request->ajax()
-            ? response()->json(['success' => true, 'message' => 'Patient added successfully.'])
-            : redirect()->route('patients.index')->with('success', 'Patient added successfully.');
+    public function edit(Patient $patient)
+    {
+        return response()->json([
+            'id' => $patient->id,
+            'name' => $patient->name,
+            'mail' => $patient->mail,
+            'phone' => $patient->phone,
+            'address' => $patient->address,
+            'doctor_id' => $patient->doctor_id,
+            'image' => $patient->image ? Storage::url($patient->image) : null,
+        ]);
     }
 
     public function update(Request $request, Patient $patient)
     {
-        $data = $request->validate([
-            'name'      => 'required|string|max:255',
-            'doctor_id' => 'nullable|exists:doctors,id',
-            'address'   => 'nullable|string|max:255',
-            'mail'      => 'nullable|email|max:255',
-            'phone'     => 'nullable|string|max:20',
-            'image'     => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-        ]);
+        try {
+            $data = $request->validate([
+                'name' => 'required|string|max:255',
+                'doctor_id' => 'nullable|exists:doctors,id',
+                'address' => 'nullable|string|max:255',
+                'mail' => 'nullable|email|max:255',
+                'phone' => 'nullable|string|max:20',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            ]);
 
-        if ($request->hasFile('image')) {
-            if ($patient->image && Storage::disk('public')->exists($patient->image)) {
-                Storage::disk('public')->delete($patient->image);
+            if ($request->hasFile('image')) {
+                if ($patient->image && Storage::disk('public')->exists($patient->image)) {
+                    Storage::disk('public')->delete($patient->image);
+                }
+                $data['image'] = $request->file('image')->store('patients', 'public');
             }
-            $data['image'] = $request->file('image')->store('patients', 'public');
+
+            $patient->update($data);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Patient updated successfully.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
         }
-
-        $patient->update($data);
-
-        return $request->ajax()
-            ? response()->json(['success' => true, 'message' => 'Patient updated successfully.'])
-            : redirect()->route('patients.index')->with('success', 'Patient updated successfully.');
     }
 
     public function destroy(Request $request, Patient $patient)
     {
-        if ($patient->image && Storage::disk('public')->exists($patient->image)) {
-            Storage::disk('public')->delete($patient->image);
+        try {
+            if ($patient->image && Storage::disk('public')->exists($patient->image)) {
+                Storage::disk('public')->delete($patient->image);
+            }
+
+            $patient->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Patient deleted successfully.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
         }
+    }
 
-        $patient->delete();
+    public function bulkDelete(Request $request)
+    {
+        try {
+            $ids = $request->ids;
+            if (!$ids || count($ids) === 0) {
+                return response()->json(['error' => 'No patients selected'], 400);
+            }
 
-        return $request->ajax()
-            ? response()->json(['success' => true, 'message' => 'Patient deleted successfully.'])
-            : redirect()->route('patients.index')->with('success', 'Patient deleted successfully.');
+            Patient::whereIn('id', $ids)->delete();
+            return response()->json(['success' => 'Selected patients deleted successfully!']);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

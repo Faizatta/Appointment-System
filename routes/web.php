@@ -96,7 +96,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profiles', [ProfileController::class, 'destroy'])->name('profiles.destroy');
 });
 Route::post('/doctors/bulk-delete', [DoctorController::class, 'bulkDelete'])->name('doctors.bulkDelete');
+Route::post('/patients/bulk-delete', [PatientController::class, 'bulkDelete'])->name('patients.bulkDelete');
 
 Route::patch('/profiles/password', [ProfileController::class, 'updatePassword'])->name('profiles.updatePassword');
-
+Route::post('/users/bulk-delete', [UserController::class, 'bulkDelete'])->name('users.bulkDelete');
 require __DIR__ . '/auth.php';

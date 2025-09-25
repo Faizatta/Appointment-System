@@ -81,7 +81,17 @@ class RoleController extends Controller
             ->with('success', 'Role updated successfully.');
     }
 
+public function bulkDelete(Request $request)
+{
+    $ids = $request->ids;
 
+    try {
+        User::whereIn('id', $ids)->delete();
+        return response()->json(['success' => 'Users deleted successfully']);
+    } catch (\Exception $e) {
+        return response()->json(['message' => 'Error deleting users'], 500);
+    }
+}
     public function destroyrole(Role $role)
     {
         $role->delete();
