@@ -32,15 +32,11 @@ class DoctorController extends Controller
                     ];
                 })
                 ->addColumn('address', fn($row) => $row->address ?? '—')
-
-                // ✅ match frontend: patients instead of patients_list
                 ->addColumn('patients', function ($row) {
-                    if ($row->patients->isEmpty())
-                        return null;
-                    return $row->patients->pluck('name')->implode(', '); // comma-separated string
+                    return $row->patients->isNotEmpty()
+                        ? $row->patients->pluck('name')->implode(', ')
+                        : '—';
                 })
-
-
                 ->addColumn('actions', function ($row) {
                     $doctorArray = [
                         'id' => $row->id,
@@ -53,20 +49,30 @@ class DoctorController extends Controller
                     ];
                     $doctorJson = e(json_encode($doctorArray));
 
-                    $viewBtn = '<button class="btn btn-sm view-doctor" data-bs-toggle="tooltip" title="View" data-doctor=\'' . $doctorJson . '\'><i class="bi bi-eye"></i></button>';
 
-                    $editBtn = '<button class="btn btn-sm edit-doctor" data-doctor=\'' . $doctorJson . '\' title="Edit"
-                                    ' . (!(auth()->user()->hasRole('Admin') || auth()->user()->can('edit doctor')) ? 'disabled' : '') . '>
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>';
+                    $canView = auth()->user()->hasRole('Admin') || auth()->user()->can('manage doctor');
+                    $viewBtn = '<button class="btn btn-sm view-doctor" data-bs-toggle="tooltip"
+                title="View" data-doctor=\'' . $doctorJson . '\' ' . ($canView ? '' : 'disabled') . '>
+                <i class="bi bi-eye"></i>
+            </button>';
 
+
+
+                    $canEdit = auth()->user()->hasRole('Admin') || auth()->user()->can('manage doctor');
+                    $editBtn = '<button class="btn btn-sm edit-doctor" data-doctor=\'' . $doctorJson . '\'
+                                title="Edit" ' . ($canEdit ? '' : 'disabled') . '>
+                                <i class="bi bi-pencil-square"></i>
+                            </button>';
+
+
+                    $canDelete = auth()->user()->hasRole('Admin') || auth()->user()->can('delete doctor');
                     $deleteForm = '<form action="' . route('doctors.destroy', $row->id) . '" method="POST" style="display:inline;">
-                                        ' . csrf_field() . method_field("DELETE") . '
-                                        <button type="submit" class="btn btn-sm delete-doctor" title="Delete"
-                                            ' . (!(auth()->user()->hasRole('admin') || auth()->user()->can('delete doctor')) ? 'disabled' : '') . '>
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                   </form>';
+                                    ' . csrf_field() . method_field("DELETE") . '
+                                    <button type="submit" class="btn btn-sm delete-doctor"
+                                        title="Delete" ' . ($canDelete ? '' : 'disabled') . '>
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                               </form>';
 
                     return '<div class="action-icons">' . $viewBtn . $editBtn . $deleteForm . '</div>';
                 })
@@ -77,17 +83,22 @@ class DoctorController extends Controller
         return view('doctors.index');
     }
 
-    public function bulkDelete(Request $request)
-    {
-        $ids = $request->ids;
-        if (!$ids || count($ids) === 0) {
-            return response()->json(['error' => 'No doctors selected'], 400);
-        }
-
-        Doctor::whereIn('id', $ids)->delete();
-
-        return response()->json(['success' => 'Selected doctors deleted successfully!']);
+public function bulkDelete(Request $request)
+{
+    if (!auth()->user()->can('bulk delete ')) {
+        abort(403, 'Unauthorized');
     }
+
+    $ids = $request->ids;
+    if (!$ids || count($ids) === 0) {
+        return response()->json(['error' => 'No doctors selected'], 400);
+    }
+
+    Doctor::whereIn('id', $ids)->delete();
+
+    return response()->json(['success' => 'Selected doctors deleted successfully!']);
+}
+
 
     public function store(Request $request)
     {

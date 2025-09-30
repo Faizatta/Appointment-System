@@ -7,9 +7,11 @@ use App\Http\Controllers\PatientController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Auth\PhoneVerificationController;
+use App\Http\Controllers\PostController;
 use Illuminate\Support\Facades\Route;
 use App\Models\Doctor;
 use App\Models\Patient;
+use \App\Models\Post;
 
 
 Route::get('/', function () {

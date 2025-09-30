@@ -87,12 +87,21 @@
         font-size: 0.7rem;
         font-weight: bold;
     }
+
+    .permission-role label {
+        text-decoration: line-through;
+        color: #000 !important;
+    }
+
+    .form-check-input {
+        box-shadow: none !important;
+        outline: none !important;
+    }
 </style>
 @endpush
 
 @section('content')
 
-{{-- Roles Section --}}
 <div class="container mt-1" style="max-width: 1000px;">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0 fw-bold">Roles List</h4>
@@ -118,10 +127,10 @@
                                         </a>
 
                                         <form action="{{ route('roles.destroyrole', $role->id) }}" method="POST"
-                                              class="d-inline delete-role-form">
+                                              class="d-inline delete-role-form" data-role-name="{{ $role->name }}">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="text-dark bg-transparent p-0"
+                                            <button type="button" class="text-dark bg-transparent p-0 delete-role-btn"
                                                     style="width: 20px; height: 20px; font-size: 0.7rem; display:flex; align-items:center; justify-content:center; border:none;">
                                                 <i class="fas fa-trash-alt"></i>
                                             </button>
@@ -195,8 +204,14 @@
                         <input type="email" id="editUserEmail" name="email" class="form-control form-control-sm" required>
                     </div>
 
-                    <div class="mb-2" id="editUserRoles">
+                    <div class="mb-2">
+                        <label class="form-label">Assign Roles</label>
+                        <div id="editUserRoles" class="d-flex flex-wrap gap-2"></div>
+                    </div>
 
+                    <div class="mb-2">
+                        <label class="form-label">Specific Permissions</label>
+                        <div id="editUserPermissions" class="row"></div>
                     </div>
                 </div>
 
@@ -212,12 +227,30 @@
 @endsection
 
 @push('scripts')
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
 $(function () {
+    // Show success messages from Laravel session
+    @if(session('success'))
+        Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: '{{ session('success') }}',
+            timer: 3000,
+            showConfirmButton: false
+        });
+    @endif
+
+    @if(session('error'))
+        Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: '{{ session('error') }}',
+            timer: 3000,
+            showConfirmButton: false
+        });
+    @endif
 
     var table = $('#users-table').DataTable({
         processing: true,
@@ -230,55 +263,17 @@ $(function () {
             {
                 data: 'id',
                 render: function(data, type, row) {
-                    // Check if user is admin - handle both boolean and string formats
                     let isAdmin = false;
-
-                    // Check is_admin field
-                    if (row.is_admin === true || row.is_admin === 1 || row.is_admin === '1') {
+                    if (row.is_admin === true || row.is_admin == 1 || row.roles?.toLowerCase().includes('admin')) {
                         isAdmin = true;
                     }
-
-                    // Check roles string for admin
-                    if (row.roles && typeof row.roles === 'string' &&
-                        row.roles.toLowerCase().includes('admin')) {
-                        isAdmin = true;
-                    }
-
-                    // Check roles array for admin
-                    if (Array.isArray(row.roles_array) &&
-                        row.roles_array.some(role => role.toLowerCase().includes('admin'))) {
-                        isAdmin = true;
-                    }
-
-                    // Don't show checkbox for admin users
-                    if (isAdmin) {
-                        return '<span class="text-muted">—</span>';
-                    }
-
-                    return `<input type="checkbox" class="row-check" value="${data}">`;
+                    return isAdmin ? '<span class="text-muted">—</span>' : `<input type="checkbox" class="row-check" value="${data}">`;
                 },
                 orderable: false,
                 searchable: false,
                 className: 'text-center'
             },
-            {
-                data: 'name',
-                name: 'name',
-                render: function(data, type, row) {
-                    // Check if user is admin
-                    let isAdmin = false;
-                    if (row.is_admin === true || row.is_admin === 1 || row.is_admin === '1') {
-                        isAdmin = true;
-                    }
-                    if (row.roles && typeof row.roles === 'string' &&
-                        row.roles.toLowerCase().includes('admin')) {
-                        isAdmin = true;
-                    }
-
-
-                    return data;
-                }
-            },
+            { data: 'name', name: 'name' },
             { data: 'email', name: 'email' },
             { data: 'roles', name: 'roles', orderable: false, searchable: false },
             {
@@ -290,31 +285,22 @@ $(function () {
             }
         ],
         rowCallback: function(row, data) {
-            // Add admin row styling
             let isAdmin = false;
-            if (data.is_admin === true || data.is_admin === 1 || data.is_admin === '1') {
+            if (data.is_admin === true || data.is_admin == 1 || (data.roles && data.roles.toLowerCase().includes('admin'))) {
                 isAdmin = true;
             }
-            if (data.roles && typeof data.roles === 'string' &&
-                data.roles.toLowerCase().includes('admin')) {
-                isAdmin = true;
-            }
-
-            if (isAdmin) {
-                $(row).addClass('admin-row');
-            }
+            if (isAdmin) $(row).addClass('admin-row');
         }
     });
 
-    // Add bulk delete button to datatable
-    $("div.datatable-buttons").html(`
-        <button id="bulkDeleteBtn" class="btn btn-sm d-flex align-items-center d-none"
-            style="padding: 2px 8px; font-size: 0.75rem; gap: 4px; background: none; color: #dc3545; border:1px solid #dc3545; border-radius:4px;">
-            <i class="fas fa-trash" style="font-size:0.8rem;"></i> Delete all
-        </button>
-    `);
+    window.allRoles = @json($roles->map(fn($r) => [
+        'name' => $r->name,
+        'permissions' => $r->permissions->pluck('name')->toArray()
+    ])->values());
 
-    // === Bulk Select ===
+    window.allPermissions = @json($permissions->map(fn($p) => ['name' => $p->name])->values());
+
+    // === Bulk select ===
     $(document).on('change', '#checkAll', function() {
         $('.row-check').prop('checked', $(this).prop('checked'));
         toggleBulkButton();
@@ -322,87 +308,50 @@ $(function () {
 
     $(document).on('change', '.row-check', function() {
         toggleBulkButton();
-
-        // Update "Check All" checkbox state
-        let totalCheckboxes = $('.row-check').length;
-        let checkedCheckboxes = $('.row-check:checked').length;
-
-        if (checkedCheckboxes === 0) {
-            $('#checkAll').prop('indeterminate', false).prop('checked', false);
-        } else if (checkedCheckboxes === totalCheckboxes) {
-            $('#checkAll').prop('indeterminate', false).prop('checked', true);
-        } else {
-            $('#checkAll').prop('indeterminate', true);
-        }
+        let total = $('.row-check').length;
+        let checked = $('.row-check:checked').length;
+        $('#checkAll').prop('checked', checked === total).prop('indeterminate', checked > 0 && checked < total);
     });
 
     function toggleBulkButton() {
-        let checkedCount = $('.row-check:checked').length;
-        if (checkedCount > 0) {
-            $('#bulkDeleteBtn').removeClass('d-none').text(`Delete all`);
-        } else {
-            $('#bulkDeleteBtn').addClass('d-none');
-        }
+        let count = $('.row-check:checked').length;
+        $('#bulkDeleteBtn').toggleClass('d-none', count === 0);
     }
 
-    // === Bulk Delete ===
+    // === Bulk delete ===
     $(document).on('click', '#bulkDeleteBtn', function() {
-        let ids = $('.row-check:checked').map(function() {
-            return $(this).val();
-        }).get();
-
-        if (ids.length === 0) return;
-
+        let ids = $('.row-check:checked').map(function() { return $(this).val(); }).get();
+        if (!ids.length) return;
         Swal.fire({
             title: 'Are you sure?',
-            text: `This will permanently delete ${ids.length} selected user${ids.length > 1 ? 's' : ''}`,
+            text: `This will permanently delete ${ids.length} user${ids.length > 1 ? 's' : ''}`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete them!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: 'Yes, delete',
         }).then((result) => {
             if (result.isConfirmed) {
-                // Show loading state
-                let originalText = $('#bulkDeleteBtn').html();
-                $('#bulkDeleteBtn').html('<i class="fas fa-spinner fa-spin"></i> Deleting...').prop('disabled', true);
-
-                $.ajax({
-                    url: "{{ route('users.bulkDelete') }}",
-                    method: 'POST',
-                    data: {
-                        ids: ids,
-                        _token: "{{ csrf_token() }}"
-                    },
-                    success: function(response) {
-                        $('#checkAll').prop('checked', false).prop('indeterminate', false);
+                $.post("{{ route('users.bulkDelete') }}", { ids: ids, _token: "{{ csrf_token() }}" })
+                    .done(res => {
                         table.ajax.reload();
-                        $('#bulkDeleteBtn').addClass('d-none').html(originalText).prop('disabled', false);
-                        Swal.fire('Deleted!', response.success || 'Users deleted successfully.', 'success');
-                    },
-                    error: function(xhr) {
-                        $('#bulkDeleteBtn').html(originalText).prop('disabled', false);
-                        let errorMessage = 'Something went wrong.';
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        }
-                        Swal.fire('Error!', errorMessage, 'error');
-                    }
-                });
+                        $('#checkAll').prop('checked', false).prop('indeterminate', false);
+                        Swal.fire('Deleted!', res.success || 'Users deleted.', 'success');
+                    })
+                    .fail(xhr => Swal.fire('Error!', xhr.responseJSON?.message || 'Something went wrong.', 'error'));
             }
         });
     });
 
-    // SweetAlert delete for single items
-    $(document).on('submit', '.delete-role-form, .delete-user-form', function(e) {
+    // === Delete Role with Confirmation ===
+    $(document).on('click', '.delete-role-btn', function(e) {
         e.preventDefault();
-        let form = this;
-        let itemType = $(form).hasClass('delete-role-form') ? 'role' : 'user';
+        let form = $(this).closest('.delete-role-form');
+        let roleName = form.data('role-name');
 
         Swal.fire({
-            title: 'Are you sure?',
-            text: `This will permanently delete this ${itemType}!`,
+            title: 'Delete Role?',
+            text: `Are you sure you want to delete the role "${roleName}"? This action cannot be undone.`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
@@ -416,48 +365,144 @@ $(function () {
         });
     });
 
-    // Dynamic Edit User Modal
-    $(document).on('click', '.editUserBtn', function() {
+    // === Delete User with Confirmation ===
+    $(document).on('click', '.deleteUserBtn', function(e) {
+        e.preventDefault();
+        let form = $(this).closest('form');
+        let userName = $(this).data('name') || 'this user';
+
+        Swal.fire({
+            title: 'Delete User?',
+            text: `Are you sure you want to delete ${userName}? This action cannot be undone.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
+    });
+
+    // === Edit User Modal ===
+    $(document).on('click', '.editUserBtn', function () {
         let userId = $(this).data('id');
         let name = $(this).data('name');
         let email = $(this).data('email');
         let roles = $(this).data('roles') ? $(this).data('roles').split(',') : [];
+        let permissions = $(this).data('permissions') ? $(this).data('permissions').split(',') : [];
 
         $('#editUserName').val(name);
         $('#editUserEmail').val(email);
-
-        let rolesHtml = '<label class="form-label">Assign Roles</label>';
-        @foreach ($roles as $role)
-            @if (strtolower($role->name) !== 'admin')
-                rolesHtml += `
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="roles[]" value="{{ $role->name }}" ${roles.includes('{{ $role->name }}') ? 'checked' : ''}>
-                    <label class="form-check-label">{{ $role->name }}</label>
-                </div>`;
-            @endif
-        @endforeach
-        $('#editUserRoles').html(rolesHtml);
-
         $('#editUserForm').attr('action', '/users/' + userId);
 
-        var editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
-        editModal.show();
+        // Roles
+        let rolesHtml = '';
+        window.allRoles.forEach(role => {
+            if (role.name.toLowerCase() === 'admin') return;
+            let checked = roles.includes(role.name) ? 'checked' : '';
+            rolesHtml += `
+                <div class="form-check me-3">
+                    <input class="form-check-input role-checkbox" type="checkbox" name="roles[]" value="${role.name}" ${checked} data-role="${role.name}">
+                    <label class="form-check-label">${role.name}</label>
+                </div>`;
+        });
+        $('#editUserRoles').html(rolesHtml);
+
+        // Permissions
+        updatePermissionsDisplay(roles, permissions);
+
+        // Handle role checkbox changes
+        $(document).off('change', '.role-checkbox').on('change', '.role-checkbox', function() {
+            let selectedRoles = [];
+            $('.role-checkbox:checked').each(function() {
+                selectedRoles.push($(this).val());
+            });
+            let currentPermissions = [];
+            $('input[name="permissions[]"]:checked:not(:disabled)').each(function() {
+                currentPermissions.push($(this).val());
+            });
+            updatePermissionsDisplay(selectedRoles, currentPermissions);
+        });
+
+        $('#editUserModal').modal('show');
     });
 
+    function updatePermissionsDisplay(roles, permissions) {
+        let rolePermissions = [];
+        if (roles.length) {
+            roles.forEach(r => {
+                let roleObj = window.allRoles.find(x => x.name === r);
+                if (roleObj && roleObj.permissions) {
+                    rolePermissions.push(...roleObj.permissions);
+                }
+            });
+        }
+        rolePermissions = [...new Set(rolePermissions)];
+
+        let permsHtml = '';
+        window.allPermissions.forEach(perm => {
+            let isFromRole = rolePermissions.includes(perm.name);
+            let checked = permissions.includes(perm.name) ? 'checked' : '';
+            let disabled = isFromRole ? 'disabled' : '';
+            let strikeStyle = isFromRole ? 'style="text-decoration: line-through; color:black;"' : '';
+
+            permsHtml += `
+                <div class="col-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="permissions[]" value="${perm.name}" ${checked} ${disabled}>
+                        <label class="form-check-label" ${strikeStyle}>${perm.name}</label>
+                    </div>
+                </div>`;
+        });
+        $('#editUserPermissions').html(permsHtml);
+    }
+
+    // === Edit User Form Submit ===
+    $('#editUserForm').on('submit', function(e) {
+        e.preventDefault();
+        let form = $(this);
+        let url = form.attr('action');
+        let formData = form.serialize();
+
+        $.ajax({
+            url: url,
+            method: 'POST',
+            data: formData,
+            success: function(response) {
+                $('#editUserModal').modal('hide');
+                table.ajax.reload();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: response.success || 'User updated successfully!',
+                    timer: 2000,
+                    showConfirmButton: false
+
+
+                });
+            },
+            error: function(xhr) {
+                let errorMsg = 'Something went wrong!';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: errorMsg
+                });
+            }
+        });
+    });
+
+    // Reset on redraw
     table.on('draw', function() {
         $('#checkAll').prop('checked', false).prop('indeterminate', false);
         $('#bulkDeleteBtn').addClass('d-none');
-    });
-
-    // Prevent accidental admin deletion
-    $(document).on('click', '.delete-user-form button[type="submit"]', function(e) {
-        let form = $(this).closest('form');
-        let actionUrl = form.attr('action');
-
-
-        let userId = actionUrl.split('/').pop();
-
-
     });
 });
 </script>

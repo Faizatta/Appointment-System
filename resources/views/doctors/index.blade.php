@@ -108,28 +108,36 @@
             opacity: 1;
             cursor: pointer;
         }
+
         /* Actions column for Doctors table */
-#doctors-table th.actions,
-#doctors-table td.actions-cell {
-    text-align: center;        /* Center horizontally */
-    vertical-align: middle;    /* Center vertically */
-}
+        #doctors-table th.actions,
+        #doctors-table td.actions-cell {
+            text-align: center;
+            vertical-align: middle;
 
-/* Action icons container */
-.action-icons {
-    display: flex;
-    justify-content: center;   /* center buttons horizontally */
-    align-items: center;       /* center vertically */
-    gap: 2px;                  /* space between buttons */
-}
+        }
 
 
+        .action-icons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
 
-.action-icons button:hover,
-.action-icons form button:hover {
-    background-color: #f0f0f0;
-}
+            gap: 2px;
 
+        }
+
+
+
+        .action-icons button:hover,
+        .action-icons form button:hover {
+            background-color: #f0f0f0;
+        }
+
+        .action-icons button:disabled {
+            color: #bbb !important;
+            cursor: not-allowed !important;
+        }
     </style>
 @endpush
 
@@ -157,7 +165,7 @@
         </thead>
     </table>
 
-    {{-- Add Doctor Modal --}}
+
     @can('add doctor')
         <div class="modal fade" id="doctorModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -208,93 +216,92 @@
             </div>
         </div>
     @endcan
-@can('edit doctor')
-
-    <div class="modal fade" id="editDoctorModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit Doctor</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="editDoctorForm" method="POST" enctype="multipart/form-data">
-                        @csrf
-                        @method('PUT')
-                        <div class="row mb-3">
-                            <div class="col">
-                                <label class="form-label">Name</label>
-                                <input type="text" id="editDoctorName" name="name"
-                                    class="form-control form-control-sm" required>
+    @can('manage doctor')
+        <div class="modal fade" id="editDoctorModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Edit Doctor</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editDoctorForm" method="POST" enctype="multipart/form-data">
+                            @csrf
+                            @method('PUT')
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <label class="form-label">Name</label>
+                                    <input type="text" id="editDoctorName" name="name"
+                                        class="form-control form-control-sm" required>
+                                </div>
+                                <div class="col">
+                                    <label class="form-label">Phone</label>
+                                    <input type="text" id="editDoctorPhone" name="phone"
+                                        class="form-control form-control-sm">
+                                </div>
                             </div>
-                            <div class="col">
-                                <label class="form-label">Phone</label>
-                                <input type="text" id="editDoctorPhone" name="phone"
-                                    class="form-control form-control-sm">
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" id="editDoctorMail" name="email"
+                                        class="form-control form-control-sm">
+                                </div>
+                                <div class="col">
+                                    <label class="form-label">Profile Picture</label>
+                                    <input type="file" id="edit-image" name="image"
+                                        class="form-control form-control-sm">
+                                    <img id="edit-image-preview" width="70" height="70"
+                                        class="border rounded mt-2 d-none">
+                                </div>
                             </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col">
-                                <label class="form-label">Email</label>
-                                <input type="email" id="editDoctorMail" name="email"
-                                    class="form-control form-control-sm">
+                            <div class="row mb-3">
+                                <div class="col">
+                                    <label class="form-label">Address</label>
+                                    <input type="text" id="editDoctorAddress" name="address"
+                                        class="form-control form-control-sm">
+                                </div>
                             </div>
-                            <div class="col">
-                                <label class="form-label">Profile Picture</label>
-                                <input type="file" id="edit-image" name="image"
-                                    class="form-control form-control-sm">
-                                <img id="edit-image-preview" width="70" height="70"
-                                    class="border rounded mt-2 d-none">
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-success btn-sm">Update</button>
+                                <button type="button" class="btn btn-secondary btn-sm"
+                                    data-bs-dismiss="modal">Cancel</button>
                             </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col">
-                                <label class="form-label">Address</label>
-                                <input type="text" id="editDoctorAddress" name="address"
-                                    class="form-control form-control-sm">
-                            </div>
-                        </div>
-                        <div class="text-end">
-                            <button type="submit" class="btn btn-success btn-sm">Update</button>
-                            <button type="button" class="btn btn-secondary btn-sm"
-                                data-bs-dismiss="modal">Cancel</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endcan
- @can('view doctor')
-    <div class="modal fade" id="viewDoctorModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title">Doctor Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-8">
-                            <p><strong>Name:</strong> <span id="viewDoctorName"></span></p>
-                            <p><strong>Patients:</strong> <span id="viewDoctorPatients"></span></p>
-                            <p><strong>Email:</strong> <span id="viewDoctorMail"></span></p>
-                            <p><strong>Phone:</strong> <span id="viewDoctorPhone"></span></p>
-                            <p><strong>Address:</strong> <span id="viewDoctorAddress"></span></p>
-                        </div>
-                        <div class="col-md-4 text-center">
-                            <img id="viewDoctorImage" width="140" height="140" class="border rounded"
-                                style="object-fit:cover; display:none;">
-                        </div>
+                        </form>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    @endcan
+    @can('manage doctor')
+        <div class="modal fade" id="viewDoctorModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-dark text-white">
+                        <h5 class="modal-title">Doctor Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <p><strong>Name:</strong> <span id="viewDoctorName"></span></p>
+                                <p><strong>Patients:</strong> <span id="viewDoctorPatients"></span></p>
+                                <p><strong>Email:</strong> <span id="viewDoctorMail"></span></p>
+                                <p><strong>Phone:</strong> <span id="viewDoctorPhone"></span></p>
+                                <p><strong>Address:</strong> <span id="viewDoctorAddress"></span></p>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <img id="viewDoctorImage" width="140" height="140" class="border rounded"
+                                    style="object-fit:cover; display:none;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-        @endcan 
+    @endcan
 @endsection
 
 @push('scripts')
@@ -387,10 +394,12 @@
             });
 
             $("div.datatable-buttons").html(`
+            @can ('bulk delete')
                 <button id="bulkDeleteBtn" class="btn btn-sm d-flex align-items-center d-none"
                     style="padding: 2px 8px; font-size: 0.75rem; gap: 4px; background: none; color: #dc3545; border:1px solid #dc3545; border-radius:4px;">
                     <i class="bi bi-trash" style="font-size:0.8rem;"></i> Delete
                 </button>
+                @endcan
             `);
 
             // === Bulk Select ===

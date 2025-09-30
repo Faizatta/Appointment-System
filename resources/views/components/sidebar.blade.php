@@ -11,7 +11,7 @@
             </a>
         </li>
 
-        @canany(['view doctor', 'delete doctor', 'edit doctor', 'create doctor'])
+        @canany(['manage doctor', 'delete doctor',  'create doctor'])
             <li class="nav-item">
                 <a class="nav-link {{ request()->is('doctors*') ? 'active' : '' }}" href="{{ route('doctors.index') }}">
                     <i class="fas fa-user me-2"></i> Doctors
@@ -19,7 +19,7 @@
             </li>
         @endcan
 
-        @canany(['view patient', 'delete patient', 'edit patient', 'create patient'])
+        @canany(['manage patient', 'delete patient',  'create patient'])
             <li class="nav-item">
                 <a class="nav-link {{ request()->is('patients*') ? 'active' : '' }}" href="{{ route('patients.index') }}">
                     <i class="fas fa-users me-2"></i> Patients

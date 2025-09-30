@@ -20,7 +20,7 @@
 
                         <div class="text-center mt-2">
                             @if (auth()->user()->hasRole('admin') ||
-                                    auth()->user()->canany(['view doctor', 'create doctor', 'edit doctor', 'delete doctor']))
+                                    auth()->user()->canany(['manage doctor', 'create doctor', 'delete doctor']))
                                 <a href="{{ url('doctors') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
                                     View
                                 </a>
@@ -51,7 +51,7 @@
 
                         <div class="text-center mt-2">
                             @if (auth()->user()->hasRole('admin') ||
-                                    auth()->user()->canany(['view patient', 'create patient', 'edit patient', 'delete patient']))
+                                    auth()->user()->canany(['manage patient', 'create patient',  'delete patient']))
                                 <a href="{{ url('patients') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
                                     View
                                 </a>
